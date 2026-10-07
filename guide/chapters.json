@@ -1,0 +1,52 @@
+[
+  {
+    "t": 0.0,
+    "title": "One entry point: /kane",
+    "detail": "/kane help lists everything; /kane opens the cockpit pane with its tabs."
+  },
+  {
+    "t": 12.0,
+    "title": "Setup & health",
+    "detail": "Version, login, credits, project; run-mode toggles; mobile tooling doctor and grid plugin check."
+  },
+  {
+    "t": 26.7,
+    "title": "Run from the pane, live",
+    "detail": "Objective + URL, Run headless: steps stream in, the band above the prompt and the status line follow."
+  },
+  {
+    "t": 49.2,
+    "title": "Runs from anywhere, side by side",
+    "detail": "A run started in a terminal is mirrored live next to the pane run: the strip, the band and the status line count both."
+  },
+  {
+    "t": 120.9,
+    "title": "Insights: who owns the result",
+    "detail": "Evidence pack read per step: verdict owner, wasted effort, interactive timeline, step screenshot."
+  },
+  {
+    "t": 145.9,
+    "title": "Tests, cloud grid & devices",
+    "detail": "Saved tests with status/sync; run on this machine or the HyperExecute grid; Android/iOS device picker."
+  },
+  {
+    "t": 174.6,
+    "title": "Assurance: requirements to coverage",
+    "detail": "Ingest \u2192 extract \u2192 review \u2192 design \u2192 run & cover, with questions answered by buttons and proven coverage."
+  },
+  {
+    "t": 189.0,
+    "title": "History: runs, trends, credits, quality, sites",
+    "detail": "Five views; Sites groups exploration by site with scenarios, pages reached and \u201cWhat to explore next\u201d."
+  },
+  {
+    "t": 211.3,
+    "title": "Claude drives kane",
+    "detail": "Ask in plain words: Claude runs kane_run, the transcript card streams live, then reads the evidence."
+  },
+  {
+    "t": 298.2,
+    "title": "End",
+    "detail": "kane-qe: one /kane cockpit for KaneAI testing inside Claude Code."
+  }
+]

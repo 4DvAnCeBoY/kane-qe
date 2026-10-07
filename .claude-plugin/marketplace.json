@@ -1,0 +1,19 @@
+{
+  "name": "kane-qe",
+  "owner": {
+    "name": "Siraj K"
+  },
+  "metadata": {
+    "description": "kane-qe: a KaneAI (kane-cli v16) testing cockpit for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "kane-qe",
+      "source": "./kane-qe",
+      "description": "Run KaneAI browser tests in plain English from Claude Code, watch them live, see who owns a failure from the evidence, run suites on the cloud grid and devices, and turn requirements into proven coverage.",
+      "version": "0.2.0",
+      "category": "testing",
+      "keywords": ["kaneai", "kane-cli", "lambdatest", "testing", "qa"]
+    }
+  ]
+}

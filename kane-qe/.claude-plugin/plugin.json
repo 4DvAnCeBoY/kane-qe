@@ -1,0 +1,46 @@
+{
+  "name": "kane-qe",
+  "version": "0.2.0",
+  "description": "KaneAI (kane-cli v16) cockpit for QE engineers in Claude Code: run browser tests in plain English, watch them live, see who owns a failure from the evidence, run suites on the cloud grid and devices, and turn requirements into proven coverage",
+  "author": {
+    "name": "Siraj K"
+  },
+  "homepage": "https://github.com/4DvAnCeBoY/kane-qe",
+  "repository": "https://github.com/4DvAnCeBoY/kane-qe",
+  "keywords": [
+    "kaneai",
+    "kane-cli",
+    "lambdatest",
+    "testing",
+    "qa",
+    "browser-testing",
+    "e2e"
+  ],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "kaneCommand": {
+      "type": "string",
+      "title": "kane-cli command",
+      "description": "How to launch kane-cli, split on spaces (e.g. \"kane-cli\" or \"node /path/to/kane-cli/dist/index.js\")",
+      "default": "kane-cli"
+    },
+    "defaultTimeoutSeconds": {
+      "type": "number",
+      "title": "Default run timeout (s)",
+      "description": "Timeout passed to kane-cli runs started from the pane or by the model",
+      "default": 600
+    },
+    "mirrorExternalRuns": {
+      "type": "boolean",
+      "title": "Mirror other kane-cli runs",
+      "description": "Follow kane-cli runs started outside this mod (terminal, Bash, other agents) live in the pane",
+      "default": true
+    },
+    "openPaneOnStart": {
+      "type": "string",
+      "title": "Open the Kane QE pane at session start",
+      "description": "\"never\" (default): it opens on /kane or when a kane run starts; \"kane-projects\": also at start in folders with saved kane tests or a requirement store; \"always\"",
+      "default": "never"
+    }
+  }
+}

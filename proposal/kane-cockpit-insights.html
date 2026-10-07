@@ -1,0 +1,345 @@
+<title>Kane Cockpit Insights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a single reading column of findings, each proposal paired with a live terminal mock built from real kane-cli runs. */
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --ink: #1b2130; --muted: #5c6577; --line: #dde1e8;
+  --accent: #c2410c; --accent-soft: #fdeee6;
+  --pass: #15803d; --fail: #c62828; --warn: #b45309; --info: #2563eb;
+  --term-bg: #12161f; --term-ink: #d7dce6; --term-dim: #7d8697; --term-line: #2a3140;
+  --k-navigate: #60a5fa; --k-type: #a78bfa; --k-click: #34d399; --k-wait: #6b7280; --k-analyze: #f59e0b; --k-assert: #f87171;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1118; --surface: #161b25; --ink: #e6e9ef; --muted: #9aa3b4; --line: #283041;
+  --accent: #fb923c; --accent-soft: #2a1a10; --pass: #4ade80; --fail: #f87171; --warn: #fbbf24; --info: #60a5fa;
+  --term-bg: #0a0d13; --term-line: #232a38; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1118; --surface: #161b25; --ink: #e6e9ef; --muted: #9aa3b4; --line: #283041;
+  --accent: #fb923c; --accent-soft: #2a1a10; --pass: #4ade80; --fail: #f87171; --warn: #fbbf24; --info: #60a5fa;
+  --term-bg: #0a0d13; --term-line: #232a38; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: grid; gap: 56px }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0 }
+h1 { font-size: clamp(2rem, 5vw, 3rem) }
+h2 { font-size: 1.6rem }
+h3 { font-size: 1.15rem }
+p { margin: 0; max-width: 68ch }
+.eyebrow { font: 600 .78rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent) }
+.lede { font-size: 1.2rem; color: var(--muted) }
+.stack { display: grid; gap: 14px }
+section > .stack { gap: 18px }
+.mono { font-family: var(--mono) }
+code { font-family: var(--mono); font-size: .88em; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 6px; align-content: start }
+.fact b { font: 700 2rem/1 var(--display); font-variant-numeric: tabular-nums }
+.fact.bad b { color: var(--fail) } .fact.time b { color: var(--warn) } .fact.good b { color: var(--pass) }
+.fact span { color: var(--muted); font-size: .95rem }
+
+.view { display: grid; gap: 16px; padding-top: 8px; border-top: 1px solid var(--line) }
+.view header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between }
+.tags { display: flex; flex-wrap: wrap; gap: 6px }
+.tag { font: 600 .72rem/1 var(--mono); padding: 5px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted) }
+.tag.p1 { border-color: var(--pass); color: var(--pass) } .tag.p2 { border-color: var(--info); color: var(--info) } .tag.p3 { border-color: var(--muted) }
+.why { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 24px; font-size: .95rem }
+.why div { min-width: 0 } .why dt { font-weight: 600 } .why dd { margin: 2px 0 0; color: var(--muted) }
+
+/* terminal mockups */
+.term { background: var(--term-bg); color: var(--term-ink); border-radius: 10px; border: 1px solid var(--term-line); font: 13px/1.5 var(--mono); padding: 14px 16px; overflow-x: auto; position: relative }
+.term .bar { color: var(--term-dim); font-size: 11px; letter-spacing: .06em; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 12px }
+.term .dim { color: var(--term-dim) } .term .ok { color: #4ade80 } .term .no { color: #f87171 } .term .amb { color: #fbbf24 } .term .blu { color: #60a5fa }
+.term .btn { border: 1px solid var(--term-line); padding: 0 6px; border-radius: 4px; color: var(--term-ink); background: none; font: inherit; cursor: pointer }
+.term .btn:hover, .term .btn:focus-visible { border-color: #fbbf24; color: #fbbf24; outline: none }
+.row { display: grid; grid-template-columns: 2.2em 9ch 1fr 6ch; gap: 8px; align-items: center; padding: 1px 4px; border-radius: 4px; cursor: pointer; min-width: 560px }
+.row:hover, .row.sel { background: #1c2331 }
+.track { height: 12px; position: relative }
+.seg { position: absolute; top: 0; height: 12px; border-radius: 2px }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 11px; color: var(--term-dim) }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px }
+.detail { margin-top: 12px; border-top: 1px dashed var(--term-line); padding-top: 10px; min-height: 5.2em; white-space: pre-wrap }
+.cells { display: grid; grid-template-columns: 11ch repeat(4, 1fr); gap: 4px; min-width: 520px }
+.cell { padding: 3px 6px; border-radius: 3px; text-align: center; cursor: pointer; font-variant-numeric: tabular-nums }
+.cell:hover, .cell.sel { outline: 1px solid #fbbf24 }
+.spark { display: flex; align-items: flex-end; gap: 6px; height: 64px; min-width: 300px }
+.spark button { width: 34px; border: 0; border-radius: 3px 3px 0 0; cursor: pointer; padding: 0 }
+.spark button:focus-visible { outline: 2px solid #fbbf24 }
+.meter { height: 10px; background: #232a38; border-radius: 5px; overflow: hidden; margin: 6px 0 }
+.meter > i { display: block; height: 100% }
+
+table { border-collapse: collapse; width: 100%; font-size: .95rem }
+.tbl { overflow-x: auto }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font: 600 .75rem/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted) }
+td:first-child { white-space: nowrap }
+.phase { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px }
+.phase > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 8px; align-content: start }
+.phase ul, .issues { margin: 0; padding-left: 1.1em; display: grid; gap: 4px }
+.callout { background: var(--accent-soft); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px }
+@media (prefers-reduced-motion: no-preference) { .seg { transition: opacity .15s } }
+</style>
+
+<div class="wrap">
+
+<header class="stack">
+  <span class="eyebrow">Proposal · kane-qe cockpit · 6 Oct 2026</span>
+  <h1>Kane Cockpit Insights</h1>
+  <p class="lede">The CPO asked for more interactive graphs and more value from the Claude Code mod. I read every file your five real kane-cli runs left on disk. Each run already records a full evidence pack: per-step timings, every network request, console output, 4K screenshots and a root-cause verdict. The cockpit shows roughly a tenth of it today.</p>
+</header>
+
+<section class="stack" aria-labelledby="found">
+  <h2 id="found">What your own runs already contain</h2>
+  <div class="facts">
+    <div class="fact bad"><b>/undefined/</b><span>The testmu.ai run <strong>passed</strong>, but its network log shows a call to <code>testmuai.com/undefined/analytics/event</code> rejected with 403: a likely product bug nobody saw. Same run: a 503 and 17 console errors.</span></div>
+    <div class="fact time"><b>37.3 s</b><span>spent in one "analyze" step of the headphones run: 30% of its 124 s, and the step that made the wrong call.</span></div>
+    <div class="fact good"><b>96%</b><span>confidence on the failure verdict kane wrote for that run: "Agent treated an empty search as product results", category agent misstep.</span></div>
+    <div class="fact"><b>104.8 cr</b><span>across 5 runs (avg 21 per run). 838.65 of 1,200 credits left, about 40 more runs at this rate.</span></div>
+  </div>
+</section>
+
+<section class="stack" aria-labelledby="views">
+  <h2 id="views">Seven views for the cockpit</h2>
+  <p>Each one below is a working mock: hover or click the rows, cells and bars. The numbers come from your runs on 5 Oct. In the terminal these become a <code>Client</code> module, which takes mouse hover, clicks and arrow keys; VS Code and mobile get the same data as text.</p>
+</section>
+
+<!-- 1 -->
+<article class="view" aria-labelledby="v1">
+  <header><h3 id="v1">1 · Run timeline</h3><div class="tags"><span class="tag p1">Phase 1</span><span class="tag">QE · SDET</span></div></header>
+  <p>A waterfall of every step, coloured by kind, sized by time. Hover a step for its timing breakdown, click it to see the screenshot and the agent's reasoning. The failing step and kane's "relevant steps" are marked, so the eye lands on the cause.</p>
+  <div class="term" id="wf">
+    <div class="bar"><span>KANE · RUN TIMELINE</span><span>search headphones · ✗ FAILED · 115.9 s · 39.1 cr</span></div>
+    <div id="wfRows"></div>
+    <div class="legend" id="wfLegend"></div>
+    <div class="detail" id="wfDetail" aria-live="polite"><span class="dim">Hover or click a step.</span></div>
+  </div>
+  <dl class="why"><div><dt>Why it matters</dt><dd>Shows at a glance where a run spends time and where it went wrong, without reading logs.</dd></div><div><dt>Source</dt><dd><code>evidence/…/result.yaml</code> steps, <code>step.json</code> duration, <code>run_end.verdict.relevant_steps</code></dd></div></dl>
+</article>
+
+<!-- 2 -->
+<article class="view" aria-labelledby="v2">
+  <header><h3 id="v2">2 · Hidden signals</h3><div class="tags"><span class="tag p1">Phase 1</span><span class="tag">QE · Dev · CPO</span></div></header>
+  <p>A heat strip per step: requests, failed requests and console messages. A passing test that hides HTTP errors or console errors gets a warning badge on its result and in History. Click the step 2 "failed req" cell: that is where the <code>/undefined/</code> call shows up. This is value the test author didn't ask for and kane already collects.</p>
+  <div class="term">
+    <div class="bar"><span>KANE · HIDDEN SIGNALS</span><span>find feature of testmu.ai · ✓ PASSED · <span class="amb">⚠ 3 signals</span></span></div>
+    <div class="cells" id="sig"></div>
+    <div class="detail" id="sigDetail" aria-live="polite"><span class="dim">Click a cell to list what was behind it.</span></div>
+  </div>
+  <dl class="why"><div><dt>Why it matters</dt><dd>Turns every functional run into a free health check of the page: broken APIs, blocked scripts, console noise.</dd></div><div><dt>Source</dt><dd><code>logs/0-network.har</code> (<code>_step</code>, <code>_failed</code>, status), <code>logs/0-console.ndjson</code> (level, step)</dd></div></dl>
+</article>
+
+<!-- 3 -->
+<article class="view" aria-labelledby="v3">
+  <header><h3 id="v3">3 · Failure verdict</h3><div class="tags"><span class="tag p1">Phase 1</span><span class="tag">QE · Lead</span></div></header>
+  <p>Kane already classifies each failure: product bug or automation problem, category, severity and confidence. The cockpit should lead with that, then offer the next action that fits the category.</p>
+  <div class="term">
+    <div class="bar"><span>KANE · VERDICT</span><span>step 9 of 10</span></div>
+<div>Agent treated an empty search as product results
+<span class="dim">family</span>   automation bug   <span class="dim">category</span> agent misstep   <span class="dim">severity</span> <span class="amb">minor</span>
+<span class="dim">confidence</span></div>
+    <div class="meter" aria-label="confidence 96%"><i style="width:96%;background:#4ade80"></i></div>
+<div><span class="dim">relevant steps</span> 3 · 7 · <span class="no">9</span>     <span class="dim">credits on this verdict</span> 13.82
+<span class="dim">fix</span>  use a search term the catalog stocks, and check for the no-results message first
+
+<button class="btn" type="button">Fix the test with Claude</button> <button class="btn" type="button">File as product bug</button> <button class="btn" type="button">Rerun</button></div>
+  </div>
+  <dl class="why"><div><dt>Why it matters</dt><dd>Separates "the product broke" from "the test is wrong", which is the first question every failure raises.</dd></div><div><dt>Source</dt><dd><code>run_end.verdict</code>, <code>steps/*/failure.yaml</code> triage, <code>suggested_fix</code></dd></div></dl>
+</article>
+
+<!-- 4 -->
+<article class="view" aria-labelledby="v4">
+  <header><h3 id="v4">4 · Trends and flakiness</h3><div class="tags"><span class="tag p1">Phase 1</span><span class="tag">Lead · CPO</span></div></header>
+  <p>History becomes a chart: one bar per run, height by duration, colour by result. Click a bar to open that run. Runs of the same test that both pass and fail are flagged as flaky; failure reasons are grouped so repeat causes stand out.</p>
+  <div class="term">
+    <div class="bar"><span>KANE · HISTORY</span><span>last 5 runs · 3 passed · 2 failed</span></div>
+    <div class="spark" id="spark" role="group" aria-label="Runs by duration"></div>
+    <div class="detail" id="sparkDetail" aria-live="polite"><span class="dim">Click a bar.</span></div>
+<div><span class="dim">failure reasons</span>  final verification ▇▇ 1   checkpoint failed ▇▇ 1</div>
+  </div>
+  <dl class="why"><div><dt>Why it matters</dt><dd>Answers "is quality getting better or worse?" and "which tests can't we trust?" without a separate tool.</dd></div><div><dt>Source</dt><dd>session dirs (<code>session.json</code>, <code>run_end</code>), grouped by <code>test_id</code> / objective</dd></div></dl>
+</article>
+
+<!-- 5 -->
+<article class="view" aria-labelledby="v5">
+  <header><h3 id="v5">5 · Credits lens</h3><div class="tags"><span class="tag p2">Phase 2</span><span class="tag">Lead · CPO · Finance</span></div></header>
+  <p>Where credits go: per run, per step kind, and a forecast against the balance. Long analyze steps and failed retries are the main cost drivers; the lens points at them.</p>
+  <div class="term">
+    <div class="bar"><span>KANE · CREDITS</span><span>balance 838.65 of 1,200</span></div>
+    <div class="meter" aria-label="30% used"><i style="width:30%;background:#fb923c"></i></div>
+<div><span class="dim">used 361.35  ·  avg 21.0 per run  ·  ≈ 40 runs left</span>
+
+headphones (failed)  <span class="amb">███████████████████▌</span> 39.10
+iPod                 <span class="blu">██████████▎</span>          20.51
+testmu.ai feature    <span class="blu">██████████</span>           20.07
+kane title           <span class="blu">██████▋</span>              13.48
+amazon heading (fail)<span class="amb">█████▊</span>               11.61</div>
+  </div>
+  <dl class="why"><div><dt>Why it matters</dt><dd>Makes cost visible before it's a surprise, and shows which tests are worth rewriting to be cheaper.</dd></div><div><dt>Source</dt><dd><code>credits_consumed</code> (run, flow, verdict), <code>kane-cli balance</code></dd></div></dl>
+</article>
+
+<!-- 6 -->
+<article class="view" aria-labelledby="v6">
+  <header><h3 id="v6">6 · Step screenshots</h3><div class="tags"><span class="tag p2">Phase 2</span><span class="tag">QE · Dev</span></div></header>
+  <p>Every step has a 4K screenshot, and clicks and types have an annotated one showing the element hit. Selecting a step in the timeline shows its screenshot in the pane. Steps whose screenshot is byte-identical to the previous one are flagged "page didn't change", a strong hint at a wasted or stuck step.</p>
+  <div class="callout"><strong>Terminal support varies.</strong> Pixel images draw in terminals with the kitty graphics protocol (kitty, Ghostty). Warp and iTerm get a text placeholder with an "Open screenshot" link. I haven't confirmed Warp's behaviour yet, and would test it before building.</div>
+  <dl class="why"><div><dt>Why it matters</dt><dd>"What did the agent see?" is the second question after every failure.</dd></div><div><dt>Source</dt><dd><code>steps/&lt;n&gt;/screenshot.jpg</code>, <code>annotated.png</code>, <code>element_rect</code></dd></div></dl>
+</article>
+
+<!-- 7 -->
+<article class="view" aria-labelledby="v7">
+  <header><h3 id="v7">7 · Coverage and web vitals</h3><div class="tags"><span class="tag p3">Phase 3</span><span class="tag">Lead · CPO</span></div></header>
+  <p>Requirement coverage (use-cases and acceptance criteria, designed vs proven, risk-weighted) and Core Web Vitals trends (LCP, CLS, INP, TTFB). Both are supported by kane-cli but produce no data yet: coverage needs a <code>.context/</code> store from <code>kane-cli context ingest</code>, and vitals need objectives that ask for them. The cockpit can offer one-click setup for each.</p>
+  <dl class="why"><div><dt>Why it matters</dt><dd>Connects test runs to product requirements and performance budgets, the language a CPO reports in.</dd></div><div><dt>Source</dt><dd><code>kane-cli cover gaps --json</code>, <code>coverage/usecases.yaml</code>, <code>run_end.context.memory</code></dd></div></dl>
+</article>
+
+<section class="stack" aria-labelledby="interaction">
+  <h2 id="interaction">How interaction works in a terminal</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Surface</th><th>Charts</th><th>Interaction</th></tr></thead>
+    <tbody>
+      <tr><td>Terminal, full screen</td><td>Coloured block and braille charts drawn by a <code>Client</code> module</td><td>Mouse hover tooltips, click to drill in, ←/→ to move between steps, Enter to open</td></tr>
+      <tr><td>Terminal, inline</td><td>Same charts</td><td>Keyboard only: Tab, arrows, Enter</td></tr>
+      <tr><td>Desktop app</td><td>Same charts, SVG where it helps</td><td>Mouse and keyboard</td></tr>
+      <tr><td>VS Code, mobile</td><td>Text tables and summaries</td><td>Buttons</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="stack" aria-labelledby="plan">
+  <h2 id="plan">Plan</h2>
+  <div class="phase">
+    <div><span class="tag p1">Phase 1 · about 2 days</span><h3>Read what's on disk</h3><ul><li>Run timeline</li><li>Hidden signals strip and warning badge</li><li>Failure verdict card with next actions</li><li>History trends and flaky flag</li></ul></div>
+    <div><span class="tag p2">Phase 2 · about 2 days</span><h3>Cost and evidence</h3><ul><li>Credits lens and balance forecast</li><li>Step screenshots, after a Warp test</li><li>Time split: model vs tool vs browser per step</li></ul></div>
+    <div><span class="tag p3">Phase 3 · needs setup</span><h3>Requirements and performance</h3><ul><li>Coverage from <code>cover gaps</code></li><li>Web vitals trends</li><li>Flaky rate from <code>--retry</code> attempts</li></ul></div>
+  </div>
+</section>
+
+<section class="stack" aria-labelledby="issues">
+  <h2 id="issues">kane-cli data issues to raise</h2>
+  <p>Found while reading the runs. Each one affects what a dashboard can show reliably.</p>
+  <ul class="issues">
+    <li>Credits don't reconcile within one run: session 39.10, run summary 34.98, verdict 13.82.</li>
+    <li><code>run_end.run_dir</code> and <code>session.json</code> point to <code>runs/0</code>, which is never created.</li>
+    <li>Step numbers on the NDJSON stream are off by one from the step labels.</li>
+    <li><code>upload_status</code> stays "pending" after a successful upload; <code>total_duration_ms</code> is always 0.</li>
+    <li>The HAR has no response sizes or bodies (<code>-1</code>), and some <code>receive</code> timings are negative.</li>
+    <li>Console capture covers the top frame only, so most runs log nothing.</li>
+    <li><code>whoami</code> reports an expired token as "not authenticated" instead of refreshing it.</li>
+  </ul>
+</section>
+
+<section class="callout" aria-labelledby="ask">
+  <h3 id="ask">Decisions needed</h3>
+  <ul class="issues">
+    <li>Approve Phase 1 as the next build.</li>
+    <li>Should "hidden signals" warn on passing runs by default, or only when asked?</li>
+    <li>Who owns the kane-cli data issues above?</li>
+  </ul>
+</section>
+
+</div>
+
+<script>
+(() => {
+  const KC = { navigate: 'var(--k-navigate)', type: 'var(--k-type)', click: 'var(--k-click)', wait: 'var(--k-wait)', analyze: 'var(--k-analyze)', assert: 'var(--k-assert)' };
+  // Headphones run, 5 Oct: evidence/…/result.yaml step durations (ms).
+  const steps = [
+    { n: 1, kind: 'navigate', ms: 0, ok: true, text: 'Navigate to ecommerce-playground.lambdatest.io', note: 'Page load not timed by the runner.' },
+    { n: 2, kind: 'type', ms: 8000, ok: true, text: 'Type "headphones" into the product search box' },
+    { n: 3, kind: 'click', ms: 7100, ok: true, rel: true, text: 'Click SEARCH', note: 'Verdict: relevant. The results page said no products matched.' },
+    { n: 4, kind: 'wait', ms: 8400, ok: true, text: 'Wait for the results page to load' },
+    { n: 5, kind: 'wait', ms: 10900, ok: true, text: 'Plan: tick "Search in product descriptions", search again' },
+    { n: 6, kind: 'click', ms: 5600, ok: true, text: 'Click "Search in product descriptions"' },
+    { n: 7, kind: 'click', ms: 1300, ok: true, rel: true, text: 'Click Search', note: 'Verdict: relevant. Still no products.' },
+    { n: 8, kind: 'wait', ms: 4300, ok: true, text: 'Wait for updated results' },
+    { n: 9, kind: 'analyze', ms: 37300, ok: true, rel: true, culprit: true, text: 'Analyze: "at least one product appears"', note: 'Culprit. The agent reported products that were not on the page.' },
+    { n: 10, kind: 'assert', ms: 0, ok: false, text: 'Assert at least one product appears', note: 'Checkpoint failed: no products on the page.' },
+  ];
+  const total = steps.reduce((a, s) => a + s.ms, 0);
+  const rows = document.getElementById('wfRows');
+  const detail = document.getElementById('wfDetail');
+  let at = 0;
+  const show = (s, el) => {
+    rows.querySelectorAll('.row').forEach(r => r.classList.toggle('sel', r === el));
+    const share = total ? Math.round((s.ms / 115900) * 100) : 0;
+    detail.innerHTML = `<b>Step ${s.n} · ${s.kind}</b>  ${s.ok ? '<span class="ok">✓ done</span>' : '<span class="no">✗ failed</span>'}  <span class="dim">${(s.ms / 1000).toFixed(1)} s · ${share}% of the run</span>\n${s.text}${s.note ? `\n<span class="${s.culprit || !s.ok ? 'no' : 'amb'}">${s.note}</span>` : ''}\n<span class="dim">click → screenshot, agent reasoning, selector score</span>`;
+  };
+  steps.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'row'; el.tabIndex = 0; el.setAttribute('role', 'button');
+    const left = (at / total) * 100, width = Math.max(0.8, (s.ms / total) * 100);
+    at += s.ms;
+    const mark = s.culprit ? '<span class="no">◆</span>' : s.rel ? '<span class="amb">◇</span>' : '';
+    el.innerHTML = `<span class="${s.ok ? 'ok' : 'no'}">${s.ok ? '✓' : '✗'}${String(s.n).padStart(2)}</span><span class="dim">${s.kind}</span><span class="track"><span class="seg" style="left:${left}%;width:${width}%;background:${KC[s.kind]}"></span></span><span>${mark} ${(s.ms / 1000).toFixed(1)}s</span>`;
+    el.addEventListener('mouseenter', () => show(s, el));
+    el.addEventListener('click', () => show(s, el));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(s, el) } });
+    rows.appendChild(el);
+  });
+  document.getElementById('wfLegend').innerHTML = Object.entries(KC).map(([k, c]) => `<span><i style="background:${c}"></i>${k}</span>`).join('') + '<span><span class="amb">◇</span> relevant to verdict</span><span><span class="no">◆</span> culprit</span><span>33.0 s setup and upload not shown</span>';
+
+  // testmu.ai run: logs/0-network.har and logs/0-console.ndjson, per step.
+  const sig = { steps: ['navigate', 'click Platform', 'wait', 'analyze'], rows: [
+    { name: 'requests', vals: [122, 143, 85, 10], scale: 143, hue: '96,165,250' },
+    { name: 'failed req', vals: [23, 36, 10, 2], scale: 36, hue: '251,191,36' },
+    { name: 'console err', vals: [6, 9, 1, 1], scale: 9, hue: '248,113,113' },
+    { name: 'console warn', vals: [4, 15, 11, 0], scale: 15, hue: '251,191,36' },
+  ] };
+  const notes = {
+    'failed req': [
+      '23 scripts from www.testmuai.com did not load.',
+      '<span class="no">403 GET testmuai.com/undefined/analytics/event</span>: "undefined" in the path, a likely product bug.\n<span class="no">503 prefetch testmuai.com/feature/</span>. Also 10 www.google.com fetches and 3 ad scripts failed.',
+      '<span class="no">403 fetch manthan.app.docketai.com/api/v3/public/auth/init</span>. Also 9 www.google.com fetches failed.',
+      '1 LinkedIn ads pixel and 1 Google Analytics call failed.',
+    ],
+    'console err': [
+      '"Blocked script execution in \'about:blank\' because the document\'s frame is sandboxed" ×6',
+      'Same sandbox message ×6, and "Failed to load resource: 403".',
+      '"UTM Script triggered" (logged at error level).',
+      '"Failed to load resource: the server responded with a status of 403".',
+    ],
+  };
+  const grid = document.getElementById('sig');
+  const sd = document.getElementById('sigDetail');
+  grid.innerHTML = '<span></span>' + sig.steps.map((s, i) => `<span class="dim" style="text-align:center">${i + 1} ${s}</span>`).join('');
+  sig.rows.forEach(r => {
+    grid.insertAdjacentHTML('beforeend', `<span class="dim">${r.name}</span>`);
+    r.vals.forEach((v, i) => {
+      const c = document.createElement('span');
+      c.className = 'cell'; c.tabIndex = 0; c.textContent = v;
+      c.style.background = `rgba(${r.hue},${0.12 + 0.6 * (v / r.scale)})`;
+      const say = () => {
+        grid.querySelectorAll('.cell').forEach(x => x.classList.toggle('sel', x === c));
+        sd.innerHTML = `<b>Step ${i + 1} · ${sig.steps[i]}</b> · ${r.name}: ${v}\n${(notes[r.name] || [])[i] || '<span class="dim">Click → the list of entries behind this number.</span>'}\n<span class="dim">Run total: 360 requests, 71 failed, HTTP 503 ×1 and 403 ×2, 17 console errors. Result: passed.</span>`;
+      };
+      c.addEventListener('click', say); c.addEventListener('mouseenter', say);
+      c.addEventListener('keydown', e => { if (e.key === 'Enter') say() });
+      grid.appendChild(c);
+    });
+  });
+
+  // History, 5 Oct: run_end duration, status, credits.
+  const runs = [
+    { t: '15:54', name: 'Kane title on playground', s: 27.2, ok: true, cr: 13.48 },
+    { t: '15:55', name: "Heading says 'Welcome to Amazon'", s: 33.7, ok: false, cr: 11.61, why: 'final verification failed' },
+    { t: '16:09', name: 'Find feature of testmu.ai', s: 54.7, ok: true, cr: 20.07, warn: '3 hidden signals' },
+    { t: '16:26', name: 'Search headphones', s: 115.9, ok: false, cr: 39.10, why: 'checkpoint failed, agent misstep' },
+    { t: '16:31', name: 'Search iPod', s: 66.4, ok: true, cr: 20.51 },
+  ];
+  const sp = document.getElementById('spark'), spd = document.getElementById('sparkDetail');
+  runs.forEach(r => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.style.height = `${Math.round((r.s / 115.9) * 100)}%`;
+    b.style.background = r.ok ? (r.warn ? '#fbbf24' : '#4ade80') : '#f87171';
+    b.setAttribute('aria-label', `${r.t} ${r.name}, ${r.ok ? 'passed' : 'failed'}, ${r.s} seconds`);
+    const say = () => { spd.innerHTML = `<b>${r.t} · ${r.name}</b>  ${r.ok ? '<span class="ok">✓ passed</span>' : '<span class="no">✗ failed</span>'}  <span class="dim">${r.s} s · ${r.cr} cr</span>${r.why ? `\n<span class="no">${r.why}</span>` : ''}${r.warn ? `\n<span class="amb">⚠ ${r.warn}</span>` : ''}\n<span class="dim">click → open this run in the cockpit</span>` };
+    b.addEventListener('mouseenter', say); b.addEventListener('click', say); b.addEventListener('focus', say);
+    sp.appendChild(b);
+  });
+})();
+</script>

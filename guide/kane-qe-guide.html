@@ -1,0 +1,405 @@
+<title>kane-qe Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a field manual for a terminal cockpit. A narrow reading column, wide
+   blocks for the video, flow diagrams and reference tables. Magenta is KaneAI's
+   own mark in the pane; cyan is "running"; green/red/amber are verdicts only. */
+:root {
+  --bg: #f6f5f8;
+  --surface: #ffffff;
+  --ink: #1d1a24;
+  --muted: #5d5868;
+  --rule: #dedae6;
+  --accent: #a3206e;
+  --accent-soft: #f6e3ef;
+  --run: #0e7490;
+  --pass: #1f7a3d;
+  --fail: #b42318;
+  --warn: #9a6400;
+  --code-bg: #efedf3;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --measure: 68ch;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15131b; --surface: #1d1a25; --ink: #ece9f2; --muted: #a8a2b6; --rule: #332e3f;
+    --accent: #f06bbd; --accent-soft: #3a1830; --run: #5fd0e6; --pass: #5fd68a; --fail: #ff8a7a; --warn: #f2c25c;
+    --code-bg: #262231; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15131b; --surface: #1d1a25; --ink: #ece9f2; --muted: #a8a2b6; --rule: #332e3f;
+  --accent: #f06bbd; --accent-soft: #3a1830; --run: #5fd0e6; --pass: #5fd68a; --fail: #ff8a7a; --warn: #f2c25c;
+  --code-bg: #262231; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--body); padding-inline: 20px; padding-block: 0 64px; }
+main { max-width: 1080px; margin-inline: auto; display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.75rem; font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; max-width: var(--measure); }
+a { color: var(--accent); }
+code, kbd, .mono { font-family: var(--mono); font-size: 0.86em; }
+code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+kbd { border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.45em; background: var(--surface); }
+.eyebrow { font: 600 0.78rem/1 var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+section { display: grid; gap: 20px; min-width: 0; }
+.lede { font-size: 1.2rem; color: var(--muted); }
+
+header.top { padding-block: 56px 8px; display: grid; gap: 18px; }
+.paneline { font-family: var(--mono); font-size: 0.92rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.paneline b { color: var(--accent); font-weight: 500; }
+.paneline .ok { color: var(--pass); }
+
+/* video + chapters */
+.player { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .player { grid-template-columns: 1fr; } }
+video { width: 100%; max-width: 100%; border-radius: 10px; border: 1px solid var(--rule); background: #111; display: block; }
+.chapters { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 560px; overflow-y: auto; }
+.chapters button { all: unset; cursor: pointer; display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 9px 10px; border-radius: 8px; width: 100%; box-sizing: border-box; }
+.chapters button:hover, .chapters button:focus-visible { background: var(--accent-soft); }
+.chapters button:focus-visible { outline: 2px solid var(--accent); }
+.chapters button[aria-current="true"] { background: var(--accent-soft); }
+.chapters .t { font: 500 0.82rem/1.5 var(--mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.chapters .c b { display: block; font-weight: 600; line-height: 1.3; }
+.chapters .c span { color: var(--muted); font-size: 0.88rem; line-height: 1.35; display: block; margin-top: 2px; }
+.note { color: var(--muted); font-size: 0.92rem; }
+
+/* surfaces */
+.surfaces { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.surfaces > div { background: var(--surface); padding: 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.surfaces h3 { font-size: 1.02rem; }
+.surfaces p { font-size: 0.95rem; color: var(--muted); }
+.surfaces .where { font: 500 0.78rem/1.3 var(--mono); color: var(--run); }
+
+/* flows */
+.flow { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 20px; display: grid; gap: 12px; min-width: 0; }
+.flow pre.mermaid { margin: 0; overflow-x: auto; background: transparent; text-align: center; }
+.flows { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; }
+@media (max-width: 520px) { .flows { grid-template-columns: 1fr; } }
+
+/* tabs reference */
+.tabs { display: grid; gap: 14px; }
+.tabrow { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 20px; padding-block: 16px; border-top: 1px solid var(--rule); }
+@media (max-width: 640px) { .tabrow { grid-template-columns: 1fr; gap: 8px; } }
+.tabrow .name { display: grid; gap: 6px; align-content: start; }
+.tabrow .name h3 { font-size: 1.2rem; }
+.tabrow ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: var(--measure); }
+
+/* verdict legend */
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.v { border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; background: var(--surface); display: grid; gap: 4px; }
+.v b { font: 600 0.82rem/1.2 var(--mono); letter-spacing: 0.04em; }
+.v span { font-size: 0.92rem; color: var(--muted); }
+.v.product b { color: var(--fail); } .v.look b, .v.signals b { color: var(--warn); } .v.model b { color: var(--run); } .v.clean b { color: var(--pass); } .v.none b { color: var(--muted); }
+
+/* tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 0.78rem/1.2 var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--code-bg); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+td code { white-space: nowrap; }
+
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; display: grid; gap: 6px; }
+footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--rule); padding-top: 18px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<main>
+  <header class="top">
+    <div class="eyebrow">Claude Code mod · kane-cli v16</div>
+    <h1>kane-qe Field Guide</h1>
+    <p class="lede">One <code>/kane</code> cockpit for KaneAI browser testing inside Claude Code: run tests in plain English, watch them live, find out who owns a failure from the evidence, run suites on the cloud grid and devices, and turn requirements into proven coverage.</p>
+    <div class="paneline" aria-label="What the pane header shows">
+      <span><b>KaneAI</b> v0.8.20</span><span class="ok">● default/prod</span><span>TMS: KaneAI Generated / Untitled</span>
+      <span>[ Run ] [ Insights ] [ Tests ] [ Assurance ] [ History ] [ Setup ]</span>
+    </div>
+  </header>
+
+  <section id="video" aria-labelledby="video-h">
+    <div class="eyebrow">Walkthrough</div>
+    <h2 id="video-h">Every feature, recorded in a real session</h2>
+    <div class="player">
+      <video id="tour" controls preload="metadata" src="kane-qe-tour.mp4"></video>
+      <ol class="chapters" id="chapters" aria-label="Chapters"></ol>
+    </div>
+    <p class="note">Recorded unedited in Claude Code with the mod loaded: real kane-cli runs against the LambdaTest ecommerce playground. Pick a chapter to jump to it.</p>
+  </section>
+
+  <section aria-labelledby="where-h">
+    <div class="eyebrow">At a glance</div>
+    <h2 id="where-h">Where the mod shows up</h2>
+    <div class="surfaces">
+      <div><span class="where">/kane …</span><h3>One entry point</h3><p>Type what you want: an objective runs it, a <code>_test.md</code> replays it, a word opens a tab, a question goes to Claude.</p></div>
+      <div><span class="where">side pane</span><h3>The cockpit</h3><p>Six tabs: Run, Insights, Tests, Assurance, History, Setup. Mouse, keyboard and hotkeys all work.</p></div>
+      <div><span class="where">above the prompt</span><h3>Live band</h3><p>While runs are in progress: the newest step, <code>◐ Kane ×2</code> for parallel runs, Open and Stop.</p></div>
+      <div><span class="where">status line</span><h3>Always current</h3><p><code>kane ◐ 2 running · …</code> while running, then <code>kane ✓ passed 2m ago</code>; clears after 10 minutes.</p></div>
+      <div><span class="where">transcript</span><h3>Run cards</h3><p>When Claude calls a kane tool, its card streams steps live and offers Insights, Triage and CI.</p></div>
+      <div><span class="where">model tools</span><h3>Claude drives kane</h3><p>Nine tools: run, replay, suites, devices, assurance, tests, status, insights, generate.</p></div>
+      <div><span class="where">~/.testmuai/kaneai</span><h3>Runs from anywhere</h3><p>Runs started in a terminal, CI or another agent are mirrored live and join History.</p></div>
+      <div><span class="where">.testmuai · .context</span><h3>Watches the project</h3><p>New tests, evidence and requirement commits refresh Tests and Assurance on their own.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="flows-h">
+    <div class="eyebrow">Flows</div>
+    <h2 id="flows-h">How the work moves</h2>
+    <div class="flows">
+      <div class="flow">
+        <h3>Run an objective</h3>
+        <pre class="mermaid">
+flowchart TD
+  A["/kane url objective<br/>or Run in the pane<br/>or Claude: kane_run"] --> B{"Objective coach"}
+  B -- "no assertion or unset vars" --> C["Held: Let Claude add checks<br/>Run anyway · Edit"]
+  B -- ok --> D["kane-cli run --agent<br/>steps stream live"]
+  C --> D
+  D --> E{"Verdict"}
+  E -- passed --> F["Insights: clean or page signals<br/>Save as test · Playwright code · CI"]
+  E -- failed --> G["Insights: who owns it"]
+  G --> H["Fix the test with Claude"]
+  G --> I["Draft bug report with Claude"]
+  G --> J["Rerun · Check flakiness ×3"]
+        </pre>
+      </div>
+      <div class="flow">
+        <h3>Who owns a failure</h3>
+        <pre class="mermaid">
+flowchart TD
+  S["Failed run + evidence pack"] --> Q{"Out of credits or<br/>never started?"}
+  Q -- yes --> N["DID NOT RUN: fix setup / top up"]
+  Q -- no --> P{"New first-party errors<br/>at the failing steps?"}
+  P -- "yes + kane says product" --> PB["PRODUCT BUG"]
+  P -- "yes + kane says automation" --> NL["NEEDS A LOOK"]
+  P -- "no (noise ignored)" --> K{"kane's category"}
+  K -- "test data · locator · expectation" --> TW["The test itself is wrong"]
+  K -- "step limit · timeout" --> RS["The run's settings stopped it"]
+  K -- other --> CM["CLI loop or the model"]
+        </pre>
+      </div>
+      <div class="flow">
+        <h3>Requirements to proven coverage</h3>
+        <pre class="mermaid">
+flowchart LR
+  I["Ingest<br/>PRD · Jira · Confluence<br/>Linear · web page"] --> X["Extract<br/>use cases"]
+  X -- "questions" --> Q["Answer by button<br/>or Let Claude answer"]
+  Q --> X
+  X --> R["Review<br/>Approve · Review with Claude"]
+  R --> D["Design tests<br/>ACs → scenarios → _test.md"]
+  D --> V["Fill variables"]
+  V --> RT["Run designed tests<br/>testrun --from-context"]
+  RT --> C["Coverage<br/>designed % · proven %"]
+  C -- "requirement changed" --> E["Evolve stale"]
+  E --> D
+        </pre>
+      </div>
+      <div class="flow">
+        <h3>Explore a web app</h3>
+        <pre class="mermaid">
+flowchart LR
+  A["Run scenarios<br/>pane · Claude · terminal"] --> L["Live strip<br/>every run in progress"]
+  L --> H["History → Sites<br/>scenarios · pass counts<br/>pages reached"]
+  H --> W["What to explore next<br/>Claude proposes 5"]
+  W --> A
+  H --> T["Triage the failures"]
+        </pre>
+      </div>
+      <div class="flow">
+        <h3>Suites on the grid and devices</h3>
+        <pre class="mermaid">
+flowchart LR
+  T["Tests tab"] --> W{"Run on"}
+  W -- "This machine" --> L["Local Chrome<br/>or emulator / simulator<br/>doctor checks tooling"]
+  W -- "Cloud grid" --> G["HyperExecute<br/>needs remote-execution plugin<br/>+ MultiOS plan"]
+  G --> D["Pick device: filter<br/>iPhone 15 · 17.5"]
+  L --> R["Suite: per-test live steps"]
+  D --> R
+  R --> J["Job link · evidence · History"]
+        </pre>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="tabs-h">
+    <div class="eyebrow">The cockpit</div>
+    <h2 id="tabs-h">Tab by tab</h2>
+    <div class="tabs">
+      <div class="tabrow"><div class="name"><h3>Run</h3><span class="mono">hotkey 1</span></div>
+        <ul>
+          <li>Objective and URL fields; <b>Run</b> (<kbd>r</kbd>, visible browser) or <b>Run headless</b> (<kbd>h</kbd>).</li>
+          <li>The objective coach holds runs that verify nothing or use unset <code>{{variables}}</code>: <i>Let Claude add checks</i>, <i>Run anyway</i>, <i>Edit</i>.</li>
+          <li>Live steps, extracted values, warnings (low credits, unresolved variables), Test Manager link.</li>
+          <li>When several runs are in progress, a strip lists them all; click one to watch it.</li>
+          <li>After a run: <b>Insights</b> (<kbd>i</kbd>), <b>Triage with Claude</b> (<kbd>t</kbd>), <b>Playwright code</b> (<kbd>p</kbd>), <b>Copy CI command</b> (<kbd>c</kbd>), <b>Ask Claude to save as test</b>, <b>Stop</b> (<kbd>s</kbd>).</li>
+          <li>First-run guidance: install → login gates, then a checklist (installed, logged in, project, first run, saved test).</li>
+        </ul></div>
+      <div class="tabrow"><div class="name"><h3>Insights</h3><span class="mono">hotkey 2 · views 6 7 8</span></div>
+        <ul>
+          <li>Reads the run's evidence pack: per-step model vs browser time, network (HAR) and console per step, kane's verdict and suggested fix.</li>
+          <li>Owner box: PRODUCT BUG, NEEDS A LOOK, CLI / MODEL, PAGE SIGNALS, CLEAN, DID NOT RUN. Third-party ad/tracker errors and errors the page already logged earlier are ignored as noise.</li>
+          <li>Wasted effort: unchanged pages, the same action twice (even worded differently), repeated extractions, step budget used up, long waits.</li>
+          <li><b>Timeline</b> (<kbd>6</kbd>) waterfall: hover or click a step for its timing, requests, console and screenshot (drawn in the terminal). <b>Signals</b> (<kbd>7</kbd>) heat grid. <b>Time split</b> (<kbd>8</kbd>).</li>
+          <li>Follows the newest run; once you pick a run it stays, with <b>Follow latest</b>.</li>
+          <li><b>Evidence viewer</b> (<kbd>v</kbd>) opens the pack on evidence.lambdatest.com; <b>Validate pack</b>; Rerun; Check flakiness ×3; Fix the test / Draft bug report with Claude.</li>
+        </ul></div>
+      <div class="tabrow"><div class="name"><h3>Tests</h3><span class="mono">hotkey 3</span></div>
+        <ul>
+          <li>Saved <code>*_test.md</code> library: ▶ run, <b>status</b> (Test Manager identity), <b>sync</b> (push the bundle).</li>
+          <li><b>Run on</b>: This machine or <b>Cloud grid</b> (HyperExecute). Target: Web, Android, iOS with a filterable device and OS picker.</li>
+          <li>Run all, Dry run (grid preflight costs nothing), run by tags. Suites show each test's live step.</li>
+          <li>Install grid plugin from here; a refused grid job shows HyperExecute's reason (plan, quota).</li>
+        </ul></div>
+      <div class="tabrow"><div class="name"><h3>Assurance</h3><span class="mono">hotkey a</span></div>
+        <ul>
+          <li>Stage strip Ingest → Extract → Review → Design → Run &amp; cover, with counts, designed % and proven % (and when it was last proven).</li>
+          <li>Ingest a file or a Jira, Confluence, Linear or web URL. Questions kane pauses on appear with option buttons (★ recommended) or <b>Let Claude answer</b>.</li>
+          <li>Per use case: <b>Approve</b>, <b>Design tests</b>, gaps with kane's next command. <b>Run N designed tests</b>, <b>Fill variables with Claude</b>, <b>Review with Claude</b>, <b>Evolve stale</b>, <b>View graph</b>, <b>Sync with team</b>.</li>
+          <li>Refreshes by itself when anyone (terminal, CI, teammate) commits to the store or runs a test.</li>
+        </ul></div>
+      <div class="tabrow"><div class="name"><h3>History</h3><span class="mono">hotkey 4 · views 6–0</span></div>
+        <ul>
+          <li><b>Runs</b> (<kbd>6</kbd>): every run with owner mark, insights, ↻ rerun, triage; QA report with Claude.</li>
+          <li><b>Trends</b> (<kbd>7</kbd>): duration bars by result, failures by owner, flaky objectives. <b>Credits</b> (<kbd>8</kbd>): balance meter, runs left at your average, spend per run.</li>
+          <li><b>Quality</b> (<kbd>9</kbd>): web vitals trend and Measure web vitals; requirement coverage.</li>
+          <li><b>Sites</b> (<kbd>0</kbd>): exploration grouped by site with scenarios, pass counts and pages reached; <b>What to explore next</b> and <b>Triage the failures</b>.</li>
+          <li>Includes runs from terminals and CI on this machine, found on disk.</li>
+        </ul></div>
+      <div class="tabrow"><div class="name"><h3>Setup</h3><span class="mono">hotkey 5</span></div>
+        <ul>
+          <li>Version, login, credits (shows an overdrawn balance plainly), project and folder, default URL, window.</li>
+          <li>One-click run settings: mode, assertion mode, bug detection, final validation.</li>
+          <li>Mobile and cloud grid: Check Android / iOS tooling (each failing check with its fix), grid plugin check and install.</li>
+        </ul></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="verdict-h">
+    <div class="eyebrow">Reading a result</div>
+    <h2 id="verdict-h">Owner labels in Insights</h2>
+    <div class="verdicts">
+      <div class="v product"><b>PRODUCT BUG</b><span>kane says product, and the page logged new first-party errors where it failed.</span></div>
+      <div class="v look"><b>NEEDS A LOOK</b><span>kane and the page disagree; check the screenshot before filing.</span></div>
+      <div class="v model"><b>CLI / MODEL</b><span>Nothing new went wrong on the page. Headline names a wrong test, the run's settings, or the agent.</span></div>
+      <div class="v signals"><b>PAGE SIGNALS</b><span>Passed, but the site logged its own errors (a 5xx, a <code>/undefined/</code> URL).</span></div>
+      <div class="v clean"><b>CLEAN</b><span>Passed; only third-party scripts (ads, trackers) logged errors, if any.</span></div>
+      <div class="v none"><b>DID NOT RUN</b><span>Refused to start or out of credits: fix setup or top up.</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="cmd-h">
+    <div class="eyebrow">Reference</div>
+    <h2 id="cmd-h">Commands</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Type</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><code>/kane</code></td><td>Open the cockpit</td></tr>
+        <tr><td><code>/kane &lt;objective&gt;</code></td><td>Run it now (“run” in front is optional); the coach may hold it first</td></tr>
+        <tr><td><code>/kane https://site.com &lt;objective&gt;</code></td><td>Run it on that URL</td></tr>
+        <tr><td><code>/kane path/name_test.md</code></td><td>Replay a saved test</td></tr>
+        <tr><td><code>/kane insights [words]</code></td><td>Evidence of the latest run, or the newest run matching the words</td></tr>
+        <tr><td><code>/kane tests | history | setup | assure</code></td><td>Open that tab</td></tr>
+        <tr><td><code>/kane suite --tags smoke --parallel 3</code></td><td>Run a suite locally</td></tr>
+        <tr><td><code>/kane grid --tags smoke --parallel 4</code></td><td>Run a suite on the HyperExecute grid</td></tr>
+        <tr><td><code>/kane ingest &lt;prd.md | URL&gt;</code></td><td>Start the assurance loop from a requirement</td></tr>
+        <tr><td><code>/kane triage</code></td><td>Claude diagnoses the last failure from its evidence</td></tr>
+        <tr><td><code>/kane cases &lt;feature&gt;</code></td><td>Generate test cases with KaneAI, reviewed by Claude</td></tr>
+        <tr><td><code>/kane stop</code></td><td>Stop running tests and assurance commands</td></tr>
+        <tr><td><code>/kane &lt;question&gt;?</code></td><td>Ask Claude about your kane runs</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="tools-h">
+    <h2 id="tools-h">Tools Claude can call</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Tool</th><th>Does</th><th>Notable inputs</th></tr></thead>
+      <tbody>
+        <tr><td><code>kane_run</code></td><td>Run a plain-English objective and return the verdict, steps and extracted values</td><td>url, headless, max_steps, variables (secret), name (save as test), target / device_name / os_version / app (mobile)</td></tr>
+        <tr><td><code>kane_test_run</code></td><td>Replay a saved <code>_test.md</code> with self-healing</td><td>path, author, adaptive_heal</td></tr>
+        <tr><td><code>kane_suite_run</code></td><td>Run many tests as one suite</td><td>tags, match, parallel, dry_run, remote (grid), device_name, os_version</td></tr>
+        <tr><td><code>kane_devices</code></td><td>List emulators / simulators here or on the grid, with doctor results</td><td>target, remote</td></tr>
+        <tr><td><code>kane_assure</code></td><td>Drive the requirement loop headless</td><td>action: status · ingest · extract · design · answer · approve · evolve · sync</td></tr>
+        <tr><td><code>kane_insights</code></td><td>Read a run's evidence and say who owns the result</td><td>session_dir (default: latest)</td></tr>
+        <tr><td><code>kane_tests_list</code></td><td>List saved tests</td><td></td></tr>
+        <tr><td><code>kane_status</code></td><td>Version, login, credits, project, settings</td><td></td></tr>
+        <tr><td><code>kane_generate</code></td><td>Generate scenarios and cases; save them as tests</td><td>objective, limits, save + request_id</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="keys-h">
+    <div class="two">
+      <div class="section-block" style="display:grid;gap:14px;min-width:0">
+        <h2 id="keys-h">Keys in the pane</h2>
+        <div class="tablewrap"><table>
+          <tbody>
+            <tr><td><kbd>1</kbd>–<kbd>5</kbd>, <kbd>a</kbd></td><td>Run, Insights, Tests, History, Setup; Assurance</td></tr>
+            <tr><td><kbd>6</kbd>–<kbd>0</kbd></td><td>The open tab's views (Insights: 6–8, History: 6–0)</td></tr>
+            <tr><td><kbd>Tab</kbd> <kbd>↑</kbd><kbd>↓</kbd> <kbd>Enter</kbd></td><td>Move and press; charts take ↑↓ Enter too</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Back to the prompt; <kbd>ctrl+x</kbd> then <kbd>Tab</kbd> returns</td></tr>
+            <tr><td><kbd>r</kbd> <kbd>h</kbd> <kbd>s</kbd> <kbd>t</kbd> <kbd>i</kbd> <kbd>p</kbd> <kbd>c</kbd></td><td>Run, headless, stop, triage, insights, Playwright code, CI (Run tab)</td></tr>
+            <tr><td><kbd>v</kbd> · <kbd>f</kbd></td><td>Evidence viewer (Insights) · Refresh (Tests, Assurance)</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div style="display:grid;gap:14px;min-width:0">
+        <h2>Settings</h2>
+        <div class="tablewrap"><table>
+          <tbody>
+            <tr><td><b>kane-cli command</b></td><td><code>kane-cli</code>, or any launcher such as <code>node …/dist/index.js</code></td></tr>
+            <tr><td><b>Default run timeout</b></td><td>600 s for pane and Claude runs</td></tr>
+            <tr><td><b>Mirror other kane-cli runs</b></td><td>On: follow terminal, CI and other agents' runs live</td></tr>
+            <tr><td><b>Open the pane at session start</b></td><td><code>never</code> (default), <code>kane-projects</code>, <code>always</code></td></tr>
+          </tbody>
+        </table></div>
+        <p class="note">In Claude Code: <code>/config</code> → kane-qe.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="install-h">
+    <div class="eyebrow">Getting it</div>
+    <h2 id="install-h">Install and first run</h2>
+    <div class="two">
+      <div class="callout"><h3>Load the mod</h3><p>Point Claude Code at the folder in <code>~/.claude/settings.json</code> → <code>env.CLAUDE_CODE_PLUGIN_DIRS</code>, or start with <code>claude --plugin-dir ~/Documents/kane-claude-plugin/kane-qe</code>.</p></div>
+      <div class="callout"><h3>Sign in to KaneAI</h3><p><code>npm install -g @testmuai/kane-cli</code>, then <code>! kane-cli login --oauth</code> from the prompt. CI uses <code>--username</code> / <code>--access-key</code>; <b>Copy CI command</b> writes it for you.</p></div>
+      <div class="callout"><h3>Grid and devices</h3><p>Grid suites need the <code>remote-execution</code> plugin and a HyperExecute MultiOS plan. Local mobile needs macOS on Apple Silicon with Xcode or Android Studio; Setup's doctor lists what's missing.</p></div>
+      <div class="callout"><h3>Credits</h3><p>A run usually costs 10–50 credits. The pane warns under 15, and a run that runs out reads <i>Out of KaneAI credits</i>, never a test failure.</p></div>
+    </div>
+  </section>
+
+  <footer>kane-qe · built for kane-cli 0.8.20 (v16) · verified on real runs against ecommerce-playground.lambdatest.io and kaneai-playground.lambdatest.io.</footer>
+</main>
+
+<script>
+  // Chapters of the walkthrough (seconds from the start of the video).
+  const CHAPTERS = /*CHAPTERS*/[{"t": 0.0, "title": "One entry point: /kane", "detail": "/kane help lists everything; /kane opens the cockpit pane with its tabs."}, {"t": 12.0, "title": "Setup & health", "detail": "Version, login, credits, project; run-mode toggles; mobile tooling doctor and grid plugin check."}, {"t": 26.7, "title": "Run from the pane, live", "detail": "Objective + URL, Run headless: steps stream in, the band above the prompt and the status line follow."}, {"t": 49.2, "title": "Runs from anywhere, side by side", "detail": "A run started in a terminal is mirrored live next to the pane run: the strip, the band and the status line count both."}, {"t": 120.9, "title": "Insights: who owns the result", "detail": "Evidence pack read per step: verdict owner, wasted effort, interactive timeline, step screenshot."}, {"t": 145.9, "title": "Tests, cloud grid & devices", "detail": "Saved tests with status/sync; run on this machine or the HyperExecute grid; Android/iOS device picker."}, {"t": 174.6, "title": "Assurance: requirements to coverage", "detail": "Ingest → extract → review → design → run & cover, with questions answered by buttons and proven coverage."}, {"t": 189.0, "title": "History: runs, trends, credits, quality, sites", "detail": "Five views; Sites groups exploration by site with scenarios, pages reached and “What to explore next”."}, {"t": 211.3, "title": "Claude drives kane", "detail": "Ask in plain words: Claude runs kane_run, the transcript card streams live, then reads the evidence."}];
+  const list = document.getElementById('chapters');
+  const video = document.getElementById('tour');
+  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  for (const ch of CHAPTERS) {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = `<span class="t">${fmt(ch.t)}</span><span class="c"><b></b><span></span></span>`;
+    b.querySelector('.c b').textContent = ch.title;
+    b.querySelector('.c span').textContent = ch.detail;
+    b.addEventListener('click', () => { video.currentTime = ch.t; video.play().catch(() => {}); });
+    li.appendChild(b);
+    list.appendChild(li);
+  }
+  video.addEventListener('timeupdate', () => {
+    const now = video.currentTime;
+    let current = -1;
+    CHAPTERS.forEach((c, i) => { if (now >= c.t) current = i; });
+    [...list.querySelectorAll('button')].forEach((b, i) => b.setAttribute('aria-current', String(i === current)));
+  });
+</script>
