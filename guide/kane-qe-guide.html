@@ -423,7 +423,22 @@ flowchart LR
     s.onload = () => {
       const dark = matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light';
       window.mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', fontFamily: 'Source Sans 3, sans-serif' });
-      window.mermaid.run({ nodes: pending });
+      // Render each diagram from its own source into its own box, one at a time. The browser turned
+      // the "<br/>" in the source into elements, so put them back as text before handing it over.
+      ;(async () => {
+        let i = 0
+        for (const node of pending) {
+          const copy = node.cloneNode(true)
+          copy.querySelectorAll('br').forEach(br => br.replaceWith('<br/>'))
+          try {
+            const { svg } = await window.mermaid.render(`kq-diagram-${i++}`, copy.textContent)
+            node.innerHTML = svg
+            node.dataset.processed = 'true'
+          } catch (error) {
+            console.warn('diagram did not render', error)
+          }
+        }
+      })()
     };
     document.head.appendChild(s);
   }, 400));

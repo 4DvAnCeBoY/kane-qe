@@ -329,7 +329,7 @@ flowchart LR
   ];
   const svg = document.getElementById('credits-chart');
   const NS = 'http://www.w3.org/2000/svg';
-  const W = 720, rowH = 36, top = 14, left = 230, right = 70;
+  const W = 720, rowH = 36, padTop = 14, left = 230, right = 70;
   const max = 60;
   const scale = v => ((W - left - right) * v) / max;
   const el = (name, attrs, text) => {
@@ -339,16 +339,16 @@ flowchart LR
     svg.appendChild(n);
     return n;
   };
-  const height = top + RUNS.length * rowH + 30;
+  const height = padTop + RUNS.length * rowH + 30;
   svg.setAttribute('viewBox', `0 0 ${W} ${height}`);
   for (const tick of [0, 20, 40, 60]) {
     const x = left + scale(tick);
-    el('line', { x1: x, x2: x, y1: top - 4, y2: top + RUNS.length * rowH, class: 'grid' });
-    el('text', { x, y: top + RUNS.length * rowH + 18, 'text-anchor': 'middle' }, `${tick}`);
+    el('line', { x1: x, x2: x, y1: padTop - 4, y2: padTop + RUNS.length * rowH, class: 'grid' });
+    el('text', { x, y: padTop + RUNS.length * rowH + 18, 'text-anchor': 'middle' }, `${tick}`);
   }
-  el('text', { x: W - right + 8, y: top + RUNS.length * rowH + 18 }, 'credits');
+  el('text', { x: W - right + 8, y: padTop + RUNS.length * rowH + 18 }, 'credits');
   RUNS.forEach((r, i) => {
-    const y = top + i * rowH;
+    const y = padTop + i * rowH;
     el('text', { x: left - 10, y: y + rowH / 2 + 4, 'text-anchor': 'end', class: 'lbl' }, r.label);
     const bar = el('rect', { x: left, y: y + 7, width: Math.max(2, scale(r.credits)), height: rowH - 14, rx: 4 });
     bar.style.fill = r.ok ? 'var(--pass)' : 'var(--warn)';
@@ -383,7 +383,22 @@ flowchart LR
     s.onload = () => {
       const dark = matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light';
       window.mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', fontFamily: 'Lexend, sans-serif' });
-      window.mermaid.run({ nodes: pending });
+      // Render each diagram from its own source into its own box, one at a time. The browser turned
+      // the "<br/>" in the source into elements, so put them back as text before handing it over.
+      ;(async () => {
+        let i = 0
+        for (const node of pending) {
+          const copy = node.cloneNode(true)
+          copy.querySelectorAll('br').forEach(br => br.replaceWith('<br/>'))
+          try {
+            const { svg } = await window.mermaid.render(`kq-diagram-${i++}`, copy.textContent)
+            node.innerHTML = svg
+            node.dataset.processed = 'true'
+          } catch (error) {
+            console.warn('diagram did not render', error)
+          }
+        }
+      })()
     };
     document.head.appendChild(s);
   }, 400));
