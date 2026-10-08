@@ -65,7 +65,7 @@ Then type `/kane` (or `/kane help`).
 ```
 claude plugin validate kane-qe     # manifest, hooks and state contract
 claude plugin validate .           # marketplace manifest
-claude plugin test kane-qe         # 52 tests: reducers, parsers, attribution, pane flows
+claude plugin test kane-qe         # 55 tests: reducers, parsers, attribution, pane flows
 ```
 
 Edit `kane-qe/` and an interactive session that loads it from `--plugin-dir` or `CLAUDE_CODE_PLUGIN_DIRS` reloads on save.

@@ -838,5 +838,32 @@ export function contradictions(steps: readonly StepInsight[], finalState: Record
     if (saysDiffer && isEqual) out.push(`Step ${s.n} asserted {{${a}}} differs from {{${b}}}, but both were stored as "${va}"`)
     if (saysSame && !isEqual) out.push(`Step ${s.n} asserted {{${a}}} matches {{${b}}}, but they were stored as "${va}" and "${vb}"`)
   }
+  return [...out, ...flagContradictions(steps, finalState)]
+}
+
+const NEGATION = /\b(not|no|never|without|isn't|wasn't|doesn't|didn't|cannot)\b/i
+const FLAG_FILLER = new Set(['is', 'was', 'the', 'a', 'an', 'to', 'of', 'on', 'in', 'has', 'shown', 'visible', 'displayed', 'present'])
+
+/** A yes/no value the run stored that says the opposite of what one of its passing checks claims,
+ *  e.g. "the wizard did not advance to the final screen" next to `wizard_not_final_screen: false`. */
+function flagContradictions(steps: readonly StepInsight[], finalState: Record<string, unknown>): string[] {
+  const out: string[] = []
+  for (const [key, raw] of Object.entries(finalState)) {
+    const value = raw === true || raw === 'true' ? true : raw === false || raw === 'false' ? false : undefined
+    if (value === undefined) continue
+    const parts = key.toLowerCase().split(/[_\W]+/).filter(Boolean)
+    const keyNegated = parts.some(w => w === 'not' || w === 'no')
+    const words = parts.filter(w => w !== 'not' && w !== 'no' && !FLAG_FILLER.has(w))
+    if (words.length < 2) continue
+    for (const s of steps) {
+      if ((s.kind !== 'assert' && s.kind !== 'analyze') || (s.status !== 'passed' && s.status !== 'done')) continue
+      const clause = s.summary.split(/\band\b|[,;.]\s/i).find(c => words.every(w => new RegExp(`\\b${w}`, 'i').test(c)))
+      if (!clause) continue
+      // Both sides say whether the plain statement (the key without its "not") holds.
+      if ((keyNegated ? !value : value) === !NEGATION.test(clause)) continue
+      out.push(`Step ${s.n} says "${clause.trim().replace(/^\w+:\s*/, '').replace(/[.\s]+$/, '')}", but the run stored ${key} = ${value}`)
+      break
+    }
+  }
   return out
 }

@@ -221,6 +221,29 @@ describe('passes that contradict themselves', () => {
     expect(contradictions(steps, { page1_first: 'MacBook', page2_first: 'MacBook' })).toEqual(['Step 24 asserted {{page2_first}} differs from {{page1_first}}, but both were stored as "MacBook"'])
     expect(contradictions(steps, { page1_first: 'HTC Touch HD', page2_first: 'HP LP3065' })).toEqual([])
   })
+
+  test('a stored yes/no flag that says the opposite of a passing check is caught', () => {
+    const st = (n: number, kind: string, summary: string) =>
+      ({ n, kind, status: 'passed', ms: 0, summary, modelMs: 0, browserMs: 0, requests: 0, failedRequests: 0, httpIssues: [], consoleErrors: 0, consoleWarnings: 0, consoleSamples: [], isUnchanged: false, isRelevant: false, isCulprit: false }) as StepInsight
+    // Real run: empty login on kaneai-playground; the step says the wizard stayed, the stored flag says it did not.
+    const steps = [st(6, 'analyze', 'analyze: The wizard did not advance to the final screen.'), st(7, 'assert', 'assert: A popup "Required Fields Missing" appears with the text')]
+    expect(contradictions(steps, { wizard_not_final_screen: 'false', required_fields_missing_popup: 'true' }))
+      .toEqual(['Step 6 says "The wizard did not advance to the final screen", but the run stored wizard_not_final_screen = false'])
+    expect(contradictions(steps, { wizard_not_final_screen: 'true', required_fields_missing_popup: 'true' })).toEqual([])
+    // A negative check with a plain flag agrees: "no error banner" and error_banner = false.
+    expect(contradictions([st(3, 'assert', 'assert: no error banner is shown')], { error_banner: false })).toEqual([])
+    expect(contradictions([st(3, 'assert', 'assert: the error banner is shown')], { error_banner: false })).toHaveLength(1)
+  })
+})
+
+describe('step labels', () => {
+  test('a step that finishes with no remark does not keep the running placeholder', () => {
+    let run = applyEvent(newRun('p', 'run', 'x', 'model', 0), { step: 9, status: 'running', remark: 'Step 8' })
+    run = applyEvent(run, { step: 9, status: 'done', remark: '' })
+    expect(run.steps[0]?.text).toBe('(no action recorded)')
+    run = applyEvent(run, { step: 10, status: 'running', remark: 'Step 9' })
+    expect(run.steps[1]?.text).toBe('Step 9')
+  })
 })
 
 describe('repeated actions', () => {

@@ -136,7 +136,9 @@ function upsertStep(steps: KaneRun['steps'], n: number, status: string, text?: s
   if (i === -1) return [...steps, { n, status, text: text ?? '' }].sort((a, b) => a.n - b.n)
   const next = [...steps]
   const prev = next[i]!
-  next[i] = { n, status, text: text ?? prev.text }
+  // A finished step with no remark keeps kane's running placeholder ("Step 8") otherwise.
+  const kept = !text && status !== 'running' && /^Step \d+$/.test(prev.text) ? '(no action recorded)' : prev.text
+  next[i] = { n, status, text: text || kept }
   return next
 }
 
