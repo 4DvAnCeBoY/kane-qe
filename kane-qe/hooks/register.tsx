@@ -1170,12 +1170,14 @@ async function runDoctor($: $, target: 'emulator' | 'simulator') {
 
 let viewerStop: (() => void) | undefined
 
-/** Serves one pack to evidence.lambdatest.com from a local port, until stopped or replaced. */
 /** Ends the `evidence serve` for a pack: closing the stream alone can leave the server listening. */
 function killViewer($: $, pack: string) {
-  void $.process.run(['pkill', '-INT', '-f', `evidence serve ${pack}`], { timeoutMs: 5_000 }).catch(() => undefined)
+  // pkill -f takes a regex: match the path literally.
+  const literal = pack.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  void $.process.run(['pkill', '-INT', '-f', `evidence serve ${literal}`], { timeoutMs: 5_000 }).catch(() => undefined)
 }
 
+/** Serves one pack to evidence.lambdatest.com from a local port, until stopped or replaced. */
 async function openViewer($: $, pack: string) {
   viewerStop?.()
   await update($, viewerAtom, () => ({ pack, isStarting: true }))
@@ -1188,7 +1190,8 @@ async function openViewer($: $, pack: string) {
     viewerStop = undefined
   }
   const timer = $.clock.after(20_000, () => {
-    void update($, viewerAtom, v => (v?.pack === pack && v.isStarting ? { pack, isStarting: false, error: 'evidence serve printed no viewer link within 20s.' } : v))
+    viewerStop?.()
+    void update($, viewerAtom, v => (v?.pack === pack ? { pack, isStarting: false, error: 'evidence serve printed no viewer link within 20s, so it was stopped.' } : v))
   })
   let seen = ''
   void (async () => {
@@ -3245,7 +3248,17 @@ async function compactResult($: $, e: RenderInput<'ToolResult'>, next: (e: Rende
 // kane-cli publishes ~/.testmuai/kaneai/sessions/active/<pid>.json while a run
 // is live and mirrors its stdout to <session_dir>/events.ndjson; follow both.
 
-type Watch = { pid: number; dir: string; offset: number; run: KaneRun; isLabelled: boolean; rerun: string[]; memberOffsets?: Map<string, number> }
+type Watch = { pid: number; dir: string; offset: number; run: KaneRun; isLabelled: boolean; rerun: string[]; memberOffsets?: Map<string, number>; sizes?: Map<string, number> }
+
+/** True when a file grew since the last look: an unchanged log is not read again. */
+async function hasGrown($: $, w: Watch, file: string): Promise<boolean> {
+  const size = (await $.fs.stat(file).catch(() => undefined))?.size
+  if (size === undefined) return false
+  const sizes = (w.sizes ??= new Map())
+  if (sizes.get(file) === size) return false
+  sizes.set(file, size)
+  return true
+}
 
 const watches = new Map<number, Watch>()
 let isPolling = false
@@ -3318,7 +3331,7 @@ async function tailWatch($: $, w: Watch) {
   const file = `${w.dir}/events.ndjson`
   let text = ''
   try {
-    if (await $.fs.exists(file)) text = await $.fs.read(file)
+    if (await hasGrown($, w, file)) text = await $.fs.read(file)
   } catch {
     return
   }
@@ -3343,6 +3356,7 @@ async function tailWatch($: $, w: Watch) {
     const offsets = (w.memberOffsets ??= new Map())
     let memberText = ''
     try {
+      if (!(await hasGrown($, w, member.log!))) continue
       memberText = await $.fs.read(member.log!)
     } catch {
       continue

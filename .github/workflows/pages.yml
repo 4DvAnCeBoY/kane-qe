@@ -1,0 +1,51 @@
+name: Guide on GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['guide/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the site
+        run: |
+          mkdir -p _site
+          # The pages are written body-first (claude.ai artifacts add the skeleton); give them one here.
+          wrap() {
+            {
+              printf '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n'
+              printf '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+              cat "$1"
+            } > "$2"
+          }
+          wrap guide/kane-qe-guide.html _site/index.html
+          wrap guide/explainer.html _site/explainer.html
+          cp guide/kane-qe-tour.mp4 _site/
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

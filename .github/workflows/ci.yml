@@ -1,0 +1,23 @@
+name: Validate and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Validate the mod
+        run: claude plugin validate kane-qe
+      - name: Validate the marketplace
+        run: claude plugin validate .
+      - name: Run the mod's tests
+        run: claude plugin test kane-qe

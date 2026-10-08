@@ -10,7 +10,9 @@ Type `/kane` and describe what to test. The mod runs it with kane-cli, streams t
 - **Assurance**: requirement (PRD, Jira, Confluence, Linear, web page) → use cases → designed tests → proven coverage, with kane's questions answered by buttons.
 - **History**: runs, trends, credits, web vitals, and Sites, which groups exploration by site and asks Claude what to explore next.
 
-**Guide and walkthrough:** open [`guide/kane-qe-guide.html`](guide/kane-qe-guide.html) in a browser: features, flows, commands, tools, hotkeys, and a 5-minute chaptered video ([`guide/kane-qe-tour.mp4`](guide/kane-qe-tour.mp4)) recorded in a real session.
+**Read more:**
+- **[Field Guide](https://4dvanceboy.github.io/kane-qe/)**: features, flows, commands, tools, hotkeys, and a 5-minute chaptered video recorded in a real session ([mp4](guide/kane-qe-tour.mp4)).
+- **[Explained simply](https://4dvanceboy.github.io/kane-qe/explainer.html)**: what it does and why, in plain words, with diagrams and charts from real runs.
 
 ## Requirements
 
@@ -26,8 +28,6 @@ From GitHub, as a marketplace:
 /plugin marketplace add 4DvAnCeBoY/kane-qe
 /plugin install kane-qe@kane-qe
 ```
-
-The repo is private: Claude Code fetches it with your GitHub credentials, so you need read access.
 
 From a local clone, for one session or permanently:
 
@@ -56,7 +56,8 @@ Then type `/kane` (or `/kane help`).
 |---|---|
 | `kane-qe/` | The mod: manifest, hooks module (`hooks/register.tsx`), pure helpers, chart surfaces, state contract (`types/`), tests |
 | `.claude-plugin/marketplace.json` | Marketplace manifest, so the repo installs with `/plugin marketplace add` |
-| `guide/` | The feature guide, the walkthrough video and the script that records it |
+| `guide/` | The Field Guide, the plain-language explainer, the walkthrough video and the script that records it |
+| `.github/workflows/` | CI (validate and test on every push) and the GitHub Pages deploy for `guide/` |
 | `proposal/` | The design proposal for the Insights features |
 
 ## Develop
@@ -76,3 +77,7 @@ KANE_DEMO_DIR=/path/to/demo-project guide/run_tour.sh
 ```
 
 It records `guide/tour-raw.mp4` and writes chapter times to `guide/chapters.json`.
+
+## License
+
+[MIT](LICENSE)

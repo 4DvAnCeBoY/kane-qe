@@ -189,6 +189,7 @@ describe('engine', () => {
     on('fs.exists', ($, e) => ({ value: e.path in files || e.path === active }) as never)
     on('fs.list', () => ({ value: Object.keys(files).filter(f => f.startsWith(active + '/')).map(f => ({ name: f.slice(active.length + 1), kind: 'file', size: 1 })) }) as never)
     on('fs.read', ($, e) => (e.path in files ? { value: files[e.path] } : { deny: 'ENOENT' }) as never)
+    on('fs.stat', ($, e) => (e.path in files ? { value: { kind: 'file', size: files[e.path]!.length, mtimeMs: 0, isLink: false } } : { deny: 'ENOENT' }) as never)
     on('process.run', ($, e) => {
       if (e.argv[0] === 'kill') return OK('', isAlive ? 0 : 1)
       return fakeKane(e.argv)
