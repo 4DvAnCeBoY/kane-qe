@@ -347,6 +347,9 @@ export function attribute(ins: Omit<RunInsights, 'attribution'>): Attribution {
       evidence: ['No step ran and no credits were spent: fix the setup (URL, login, flags), not the test.'],
     }
   }
+  if ((ins.status === 'passed' || ins.status === 'success') && ins.contradictions?.length) {
+    return { kind: 'signals', headline: "Passed, but its own values contradict the check: don't trust this pass yet", evidence: ins.contradictions }
+  }
   if (ins.status === 'passed' || ins.status === 'success') {
     const firstParty = ins.httpIssues.filter(i => i.isFirstParty || i.isSuspicious)
     const thirdPartyConsole = ins.consoleThirdParty ?? 0
@@ -392,7 +395,10 @@ export function attribute(ins: Omit<RunInsights, 'attribution'>): Attribution {
     kind: 'automation',
     // kane can tell a wrong test (its data or expectation) from an agent misstep: say which.
     headline: `Not a product bug: ${noise.length ? 'nothing new went wrong on the page where it failed' : 'the page logged no errors where it failed'}. ${
-      /config|budget|max_steps|timeout/i.test(`${v?.category ?? ''} ${ins.reason ?? ''}`) && !/stuck/i.test(ins.reason ?? '')
+      // kane's own browser or service broke (a closed browser, a crashed runner): nobody's test or site.
+      /environment|platform|infra/i.test(`${v?.family ?? ''} ${v?.category ?? ''}`) || /TargetClosedError|browser has been closed/i.test(ins.reason ?? '')
+        ? "KaneAI's browser or service failed mid-run, not your site or test: rerun it."
+        : /config|budget|max_steps|timeout/i.test(`${v?.category ?? ''} ${ins.reason ?? ''}`) && !/stuck/i.test(ins.reason ?? '')
         ? "The run's settings stopped it (step limit or timeout): raise them and rerun."
         : /test_data|assertion|expectation|objective|fixture|test_design|locator/i.test(`${v?.category ?? ''} ${v?.family ?? ''}`)
           ? 'The test itself is wrong: fix its data or expectation.'
@@ -571,6 +577,7 @@ export function buildInsights(f: EvidenceFiles): RunInsights {
     modelMs: steps.reduce((a, s) => a + s.modelMs, 0),
     browserMs: steps.reduce((a, s) => a + s.browserMs, 0),
     vitals: { ...vitalsFrom(memory), ...vitalsFrom(finalState) },
+    contradictions: contradictions(steps, finalState),
   }
   return { ...base, attribution: attribute(base) }
 }
@@ -800,6 +807,34 @@ export function repeatedActions(steps: readonly StepInsight[]): string[] {
     const shared = [...wa].filter(w => wb.has(w))
     if (shared.length < 2 || shared.length / Math.min(wa.size, wb.size) < 0.6) continue
     out.push(`Steps ${a.n}–${b.n}: the same ${a.kind} twice (${shared.slice(0, 4).join(' ')}), ${((b.ms) / 1000).toFixed(1)}s on the repeat`)
+  }
+  return out
+}
+
+/**
+ * A passed assertion that the run's own stored values disagree with: it asserted two
+ * values differ (or match) and stored them equal (or different). The agent read the
+ * wrong thing, so the pass proves nothing even when it is right by luck.
+ */
+export function contradictions(steps: readonly StepInsight[], finalState: Record<string, unknown>): string[] {
+  const out: string[] = []
+  const stored = (name: string) => {
+    const v = finalState[name]
+    return typeof v === 'string' || typeof v === 'number' ? String(v).trim() : undefined
+  }
+  for (const s of steps) {
+    if (s.kind !== 'assert' || (s.status !== 'passed' && s.status !== 'done')) continue
+    const vars = [...new Set([...s.summary.matchAll(/\{\{\s*([\w.-]+)\s*\}\}/g)].map(m => m[1]!))]
+    if (vars.length < 2) continue
+    const [a, b] = vars as [string, string]
+    const va = stored(a)
+    const vb = stored(b)
+    if (va === undefined || vb === undefined) continue
+    const saysDiffer = /\b(differs?|different|not the same|not equal|changes?|changed)\b/i.test(s.summary)
+    const saysSame = !saysDiffer && /\b(equals?|same as|matches|identical)\b/i.test(s.summary)
+    const isEqual = va.toLowerCase() === vb.toLowerCase()
+    if (saysDiffer && isEqual) out.push(`Step ${s.n} asserted {{${a}}} differs from {{${b}}}, but both were stored as "${va}"`)
+    if (saysSame && !isEqual) out.push(`Step ${s.n} asserted {{${a}}} matches {{${b}}}, but they were stored as "${va}" and "${vb}"`)
   }
   return out
 }

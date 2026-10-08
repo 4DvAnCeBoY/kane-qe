@@ -17,7 +17,7 @@ import {
   splitWords,
   viewerUrl,
 } from '../hooks/assurance'
-import { attribute, consoleSignature, repeatedActions, siteGroups } from '../hooks/insights'
+import { attribute, consoleSignature, contradictions, repeatedActions, siteGroups } from '../hooks/insights'
 import { applyEvent, ciCommand, describeBalance, finishRun, kaneArgv, remoteFailure, tidyStep, newRun, routeKane, runArgs, suiteArgs } from '../hooks/kane'
 import type { RunInsights, StepInsight } from '../types'
 
@@ -212,6 +212,17 @@ describe('exploring a site', () => {
   })
 })
 
+describe('passes that contradict themselves', () => {
+  test('a "differs" assertion over two equal stored values is caught; a consistent one is not', () => {
+    const st = (n: number, summary: string) =>
+      ({ n, kind: 'assert', status: 'passed', ms: 0, summary, modelMs: 0, browserMs: 0, requests: 0, failedRequests: 0, httpIssues: [], consoleErrors: 0, consoleWarnings: 0, consoleSamples: [], isUnchanged: false, isRelevant: false, isCulprit: false }) as StepInsight
+    // Real run: page 1 and page 2 both read as "MacBook" (the site shows HTC Touch HD and HP LP3065), yet the check passed.
+    const steps = [st(24, 'assert: {{page2_first}} differs from {{page1_first}}; store both first product names')]
+    expect(contradictions(steps, { page1_first: 'MacBook', page2_first: 'MacBook' })).toEqual(['Step 24 asserted {{page2_first}} differs from {{page1_first}}, but both were stored as "MacBook"'])
+    expect(contradictions(steps, { page1_first: 'HTC Touch HD', page2_first: 'HP LP3065' })).toEqual([])
+  })
+})
+
 describe('repeated actions', () => {
   const st = (n: number, kind: string, summary: string) =>
     ({ n, kind, status: 'passed', ms: 6900, summary, modelMs: 0, browserMs: 0, requests: 0, failedRequests: 0, httpIssues: [], consoleErrors: 0, consoleWarnings: 0, consoleSamples: [], isUnchanged: false, isRelevant: false, isCulprit: false }) as StepInsight
@@ -267,6 +278,8 @@ describe('attribution on a noisy site', () => {
     expect(attribute(base(steps, [])).headline).toContain('Likely the CLI loop or the model')
     const budget = attribute({ ...base(steps, []), reason: 'Maximum steps exceeded (9/8)', verdict: { family: 'automation_bug', category: 'config_issue', confidence: 0.96, relevantSteps: [3] } })
     expect(budget.headline).toContain("The run's settings stopped it")
+    const platform = attribute({ ...base(steps, []), reason: 'Screenshot failed: TargetClosedError: screenshot: Target page, context or browser has been closed', verdict: { family: 'environment_issue', category: 'platform_failure', confidence: 0.92, relevantSteps: [3] } })
+    expect(platform.headline).toContain("KaneAI's browser or service failed mid-run")
   })
 
   test('a new error where it failed still needs a look', () => {

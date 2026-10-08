@@ -189,6 +189,8 @@ export type RunInsights = {
   modelMs: number
   browserMs: number
   vitals: Record<string, number>
+  /** A passed check its own stored values disagree with ("differs" but both are "MacBook"). */
+  contradictions?: string[]
 }
 
 export type KaneInsightView = 'timeline' | 'signals' | 'time'
