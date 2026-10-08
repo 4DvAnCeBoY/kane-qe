@@ -502,7 +502,7 @@ function launch($: $, kind: KaneRunKind, label: string, args: string[], source: 
 
 const INSIGHTS_KEPT = 12
 // Bump when the reading rules change: readings kept in state from an older version are redone.
-const INSIGHTS_VERSION = 12
+const INSIGHTS_VERSION = 13
 
 async function unzipText($: $, pack: string, pattern: string): Promise<string> {
   try {

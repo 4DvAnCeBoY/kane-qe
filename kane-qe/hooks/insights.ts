@@ -400,7 +400,9 @@ export function attribute(ins: Omit<RunInsights, 'attribution'>): Attribution {
         ? "KaneAI's browser or service failed mid-run, not your site or test: rerun it."
         : /config|budget|max_steps|timeout/i.test(`${v?.category ?? ''} ${ins.reason ?? ''}`) && !/stuck/i.test(ins.reason ?? '')
         ? "The run's settings stopped it (step limit or timeout): raise them and rerun."
-        : /test_data|assertion|expectation|objective|fixture|test_design|locator/i.test(`${v?.category ?? ''} ${v?.family ?? ''}`)
+        : /test_data|assertion|expectation|objective|fixture|test_design|locator/i.test(`${v?.category ?? ''} ${v?.family ?? ''}`) ||
+            // kane's own title often names it when the category does not ("assertion expects obsolete text")
+            /\b(assertion|assert)s?\b.*\b(expects?|expected|obsolete|outdated|wrong|stale)\b|\b(obsolete|outdated) (text|expectation|locator|selector)\b/i.test(v?.title ?? '')
           ? 'The test itself is wrong: fix its data or expectation.'
           : 'Likely the CLI loop or the model.'
     }`,

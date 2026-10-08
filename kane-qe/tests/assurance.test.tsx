@@ -280,6 +280,9 @@ describe('attribution on a noisy site', () => {
     expect(budget.headline).toContain("The run's settings stopped it")
     const platform = attribute({ ...base(steps, []), reason: 'Screenshot failed: TargetClosedError: screenshot: Target page, context or browser has been closed', verdict: { family: 'environment_issue', category: 'platform_failure', confidence: 0.92, relevantSteps: [3] } })
     expect(platform.headline).toContain("KaneAI's browser or service failed mid-run")
+    // Real run: category state_transition_bug, but kane's title says the assertion expected obsolete text.
+    const obsolete = attribute({ ...base(steps, []), verdict: { family: 'automation_bug', category: 'state_transition_bug', confidence: 0.91, title: 'Final-state assertion expects obsolete completion text and progress', relevantSteps: [3] } })
+    expect(obsolete.headline).toContain('The test itself is wrong')
   })
 
   test('a new error where it failed still needs a look', () => {
