@@ -106,6 +106,20 @@ describe('drawing', () => {
     await band.unmount()
   })
 
+  test('a pane hidden behind another one in the dock is brought to the front when the person opens it', async ($, on) => {
+    const w = world(on)
+    const closed: string[] = []
+    on('ui.panes', () => ({ value: [{ id: 'kane-qe', title: 'Kane', isShown: false, isFocused: false, isPlaced: true }] }) as never)
+    on('ui.close', ($, e) => {
+      closed.push((e as { id: string }).id)
+      return { value: undefined } as never
+    })
+    await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)
+    await w.clock.settle()
+    await $.command.run({ command: 'kane', args: '' } as never)
+    expect(closed).toEqual(['kane-qe'])
+  })
+
   test('the pane has Runs and Assurance; with no assurance it offers to set it up with Claude', async ($, on) => {
     const w = world(on)
     await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)

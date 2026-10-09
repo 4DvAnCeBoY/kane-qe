@@ -359,8 +359,12 @@ function assureView(ui: Kit, press: Press, a: Assurance, now: number) {
 
 // ── reading kane-cli ─────────────────────────────────────────────────────
 
-/** Opened only by something the person did; brought forward over another pane in the dock (Claude Code's Diff). */
-function openPane($: EngineInterface) {
+/** Opened only by something the person did, and brought to the front: Claude Code opens its Diff pane in the
+ *  same dock after an edit, and re-opening a pane that is already open does not raise it, so a hidden one is
+ *  closed and opened again (what it shows lives in the atoms, so nothing is lost). */
+async function openPane($: EngineInterface) {
+  const mine = (await $.ui.panes().catch(() => [])).find(p => p.id === PANE)
+  if (mine && !mine.isShown) await $.ui.close({ id: PANE }).catch(() => undefined)
   return $.ui.open({ id: PANE, title: 'Kane', columns: 58, rows: 28, focus: true })
 }
 
