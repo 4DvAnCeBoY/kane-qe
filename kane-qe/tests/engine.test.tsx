@@ -300,6 +300,17 @@ describe('after Claude changes code', () => {
     await band.unmount()
   })
 
+  test('files other tools write while a kane-cli run goes are not Claude’s edits', async ($, on) => {
+    const w = world(on, { bashResult: { stdout: '', bashEditDiff: { files: [], moreFiles: 0, changedFiles: [`${PROJECT}/src/cart.ts`] } } })
+    await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)
+    await $.tool.call({ tool: 'Bash', command: 'kane-cli run "Add an iPod to the cart" --agent --headless' } as never)
+    await w.clock.settle()
+    await $.classic.Stop({ stop_hook_active: false, last_assistant_message: 'done' } as never)
+    const band = await $.ui.mount({ ...BAND, surface: 'terminal' } as never)
+    expect(await band.find({ type: 'Text', text: /changed, untested/ })).toBeUndefined()
+    await band.unmount()
+  })
+
   test('auto: Claude is held once to test the change, never twice', async ($, on) => {
     const w = world(on)
     await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)
@@ -312,6 +323,9 @@ describe('after Claude changes code', () => {
     expect(String((first as { block?: string }).block)).toContain('src/cart.ts')
     const again = await $.classic.Stop({ stop_hook_active: false, last_assistant_message: 'done' } as never)
     expect((again as { block?: string }).block).toBeUndefined()
+    // Claude finished without testing: the band stops promising and offers the test.
+    expect(await band.find({ type: 'Text', text: /Claude will test this/ })).toBeUndefined()
+    expect(await band.find({ key: 'test' })).toBeDefined()
     await band.unmount()
   })
 

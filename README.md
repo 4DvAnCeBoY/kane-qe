@@ -45,7 +45,7 @@ Nothing to start. Open Claude Code in a project and the band is there. Everythin
 
 ![The suite in the pane](guide/v2/pane-suite.png)
 
-**5. After Claude changes code.** When a turn ends with edited files (by the edit tools or by a shell command; docs and git-ignored files don't count) and no kane-cli run since, row 2 warns *⚠ 1 file changed, untested* with *Test this change*. The card lists the changed files and the saved tests (`.testmuai/tests/*_test.md`) that mention the same feature, with their last result and *Run it*. When no saved test covers the change, Claude drafts an objective from the diff (or on *Draft a new objective*), and *Run the objective* hands it to Claude with the app's start URL. A kane-cli run that starts after the edit clears the warning, whatever its result.
+**5. After Claude changes code.** When a turn ends with edited files (by the edit tools or by a shell command; docs, hidden tool folders like `.omc/` and git-ignored files don't count) and no kane-cli run since, row 2 warns *⚠ 1 file changed, untested* with *Test this change*. The card lists the changed files and the saved tests (`.testmuai/tests/*_test.md`) that mention the same feature, with their last result and *Run it*. When no saved test covers the change, Claude drafts an objective from the diff (or on *Draft a new objective*), and *Run the objective* hands it to Claude with the app's start URL. A kane-cli run that starts after the edit clears the warning, whatever its result.
 
 ![An untested change](guide/v2/band-change.png)
 

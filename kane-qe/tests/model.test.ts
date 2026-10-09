@@ -222,6 +222,8 @@ describe('labels, edits and drafts', () => {
     expect(isTrackedEdit('README.md')).toBe(false)
     expect(isTrackedEdit('docs/guide.html')).toBe(false)
     expect(isTrackedEdit('.testmuai/tests/a_test.md')).toBe(false)
+    expect(isTrackedEdit('.omc/state/hud-stdin-cache.json')).toBe(false)
+    expect(isTrackedEdit('src/.env.example')).toBe(true)
   })
 
   test('a saved test that mentions the changed feature is offered first', () => {

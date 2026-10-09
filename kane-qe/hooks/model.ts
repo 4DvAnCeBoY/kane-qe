@@ -549,10 +549,12 @@ export function labelFromCommand(command: string): { label: string; surface: Kin
 
 // ── after Claude changes code ────────────────────────────────────────────
 
-/** Edits that never need a browser test: docs, kane's own stores, tool folders. `path` is relative to the project. */
+/** Edits that never need a browser test: docs, and tool folders (any hidden one: .testmuai, .context, .claude, .omc, .vscode…).
+ *  `path` is relative to the project. */
 export function isTrackedEdit(path: string): boolean {
   if (/\.(md|mdx|markdown|txt|rst|adoc)$/i.test(path)) return false
-  if (/(^|\/)(docs?|\.testmuai|\.context|\.claude|\.git|node_modules)\//.test(path)) return false
+  if (/(^|\/)(docs?|node_modules)\//.test(path)) return false
+  if (path.split('/').slice(0, -1).some(seg => seg.startsWith('.'))) return false
   return true
 }
 

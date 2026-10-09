@@ -74,8 +74,6 @@ const seenPointers = new Set<string>()
 /** kane-cli commands Claude ran, to name the runs they start. */
 const commands: { label: string; surface: Kind; at: number; used: boolean }[] = []
 let polling = false
-/** The change a held stop already asked Claude to test (auto mode holds once per change). */
-let heldFor = 0
 const sites = new Set<string>()
 let frame = 0
 let thinking = false
@@ -619,10 +617,11 @@ async function draftObjective($: EngineInterface) {
   await update($, offerAtom, x => (x ? { ...x, drafting: false, objective: objective || undefined, note: objective ? undefined : `No draft: ${reply && !reply.isAnswered ? reply.reason : 'Claude did not answer'}.` } : x))
 }
 
-function autoInstruction(files: readonly string[], saved: readonly string[]): string {
+function autoInstruction(files: readonly string[], saved: readonly string[], url?: string): string {
   const rel = files.map(f => (f.startsWith(`${projectDir}/`) ? f.slice(projectDir.length + 1) : f))
   const reuse = saved.length ? ` A saved test may already cover it: ${saved.slice(0, 3).map(s => `.testmuai/tests/${s}`).join(', ')} (kane-cli testmd run <file> --agent --headless).` : ''
-  return `kane-qe: you changed ${rel.join(', ')} and no kane-cli run has tested it yet. Before you finish, test the change in a browser with kane-cli (kane-cli run "<what a user does and what must be true>" --agent --headless).${reuse} Then report the result.`
+  const start = url ? ` --url ${url}` : ' --url <the app\'s start page>'
+  return `kane-qe: you changed ${rel.join(', ')} and no kane-cli run has tested it yet. Before you finish, test the change in a browser with kane-cli (kane-cli run "<what a user does and what must be true>"${start} --agent --headless).${reuse} Then report the result.`
 }
 
 /** A kane-cli command Claude is about to run names the run it starts. */
@@ -641,7 +640,11 @@ async function afterTool($: EngineInterface, e: { tool: string }, result: { deny
     const input = e as unknown as { file_path?: unknown; notebook_path?: unknown }
     await noteEdit($, String(input.file_path ?? input.notebook_path ?? ''))
   }
-  if (e.tool === 'Bash') for (const path of bashChanges(result.result)) await noteEdit($, path)
+  // A Bash result lists every file that changed while it ran, whoever wrote it: a kane-cli run takes long enough
+  // for other tools to write theirs, so its list is not Claude's edits.
+  if (e.tool === 'Bash' && !labelFromCommand(String((e as { command?: unknown }).command ?? ''))) {
+    for (const path of bashChanges(result.result)) await noteEdit($, path)
+  }
 }
 
 /** At the end of a turn: the reason to hold Claude (auto mode), or nothing; in offer mode the band's warning shows. */
@@ -653,10 +656,14 @@ async function holdForChange($: EngineInterface, e: { stop_hook_active?: boolean
     if (!change.shown) await update($, changeAtom, c => (c ? { ...c, shown: true } : c))
     return undefined
   }
-  if (e.stop_hook_active || heldFor === change.lastAt) return undefined
-  heldFor = change.lastAt
-  const saved = savedTestsFor(change.files, await savedTests($).catch(() => []))
-  return autoInstruction(change.files, saved)
+  // Held once already and the turn still ends untested: the band offers the test instead.
+  if (e.stop_hook_active || change.heldAt === change.lastAt) {
+    if (!change.shown) await update($, changeAtom, c => (c ? { ...c, shown: true } : c))
+    return undefined
+  }
+  await update($, changeAtom, c => (c ? { ...c, heldAt: c.lastAt } : c))
+  const tests = await savedTests($).catch(() => [])
+  return autoInstruction(change.files, savedTestsFor(change.files, tests), startUrl(tests))
 }
 
 async function themeChanged($: EngineInterface, theme: unknown) {
@@ -793,7 +800,9 @@ export const register: Register = (on, options) => {
     const change = await read($, changeAtom)
     const mode = modeOf(await read($, modeAtom))
     const now = await $.clock.now()
-    const shownChange = change && mode !== 'off' && (mode === 'auto' || change.shown) ? { files: change.files.length, mode: mode === 'auto' ? ('auto' as const) : ('offer' as const) } : undefined
+    // Auto promises Claude will test it until a held stop has been spent on this change; then the button.
+    const promised = mode === 'auto' && change?.heldAt !== change?.lastAt
+    const shownChange = change && mode !== 'off' && (promised || change.shown) ? { files: change.files.length, mode: promised ? ('auto' as const) : ('offer' as const) } : undefined
     const model = band(runs, { assurance: await read($, assuranceAtom), change: shownChange, last: await read($, lastAtom), now, columns: e.props.bodyColumns - RASTER.columns - 1 })
     thinking = model.think
     const table = $.ui.resolve(e)
