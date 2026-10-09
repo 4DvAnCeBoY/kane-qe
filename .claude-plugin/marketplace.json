@@ -4,16 +4,22 @@
     "name": "Siraj K"
   },
   "metadata": {
-    "description": "kane-qe: a KaneAI (kane-cli v16) testing cockpit for Claude Code"
+    "description": "kane-qe: a Claude Code plugin that watches kane-cli (KaneAI)"
   },
   "plugins": [
     {
       "name": "kane-qe",
       "source": "./kane-qe",
-      "description": "Run KaneAI browser tests in plain English from Claude Code, watch them live, see who owns a failure from the evidence, run suites on the cloud grid and devices, and turn requirements into proven coverage.",
+      "description": "Watches kane-cli (KaneAI) runs in Claude Code: a band above the prompt with the kane mascot, a pane for runs, steps, failures and assurance coverage, and a nudge to test what Claude just changed.",
       "version": "2.0.0",
       "category": "testing",
-      "keywords": ["kaneai", "kane-cli", "lambdatest", "testing", "qa"]
+      "keywords": [
+        "kaneai",
+        "kane-cli",
+        "lambdatest",
+        "testing",
+        "qa"
+      ]
     }
   ]
 }

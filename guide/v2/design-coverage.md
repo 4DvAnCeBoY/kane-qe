@@ -5,7 +5,7 @@ The design ([kane-cli mod: terminal build guide](https://claude.ai/artifact/5Dkz
 How each item was checked:
 - **live**: in a real Claude Code session in a terminal, with a real kane-cli run;
 - **staged**: a real Claude Code session, with kane-cli runs written to disk in kane-cli 0.8.20's own format, by `sleep` processes standing in for kane-cli;
-- **test**: `claude plugin test kane-qe` (80 tests).
+- **test**: `claude plugin test kane-qe` (81 tests).
 
 ## Features (design part 1, "What to build")
 
