@@ -1,4 +1,4 @@
-// kane-qe v2: watches kane-cli and shows it. A band of three rows above the prompt (with the mascot),
+// kane-qe v2: watches kane-cli and shows it: a band of three rows above the prompt (with the mascot),
 // a pane for runs and assurance, and a nudge to test what Claude just changed.
 // The mod never starts a test: Claude runs kane-cli, the mod reads what kane-cli leaves on disk.
 import { atom, read, update } from 'claude-code'
