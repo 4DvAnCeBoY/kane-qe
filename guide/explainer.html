@@ -1,46 +1,44 @@
-<title>kane-qe, Explained</title>
+<title>kane-qe v2, Explained</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Lexend:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* Layout: a friendly explainer that reads top to bottom like a short story —
-   one idea per section, each with a picture (diagram or chart) next to it.
-   Same palette family as the Field Guide: KaneAI magenta, cyan for "running",
-   green/red/amber only for results. */
+/* A short story read top to bottom: one idea per section, each with a picture next to it.
+   Same palette as the band: purple is kane, yellow is assurance only, orange an untested
+   change, mint/coral/cyan passed/failed/running. */
 :root {
-  --bg: #f7f6f9;
+  --bg: #f7f6fa;
   --surface: #ffffff;
-  --ink: #1d1a24;
-  --muted: #5d5868;
-  --rule: #e0dce8;
-  --accent: #a3206e;
-  --accent-soft: #f6e3ef;
-  --run: #0e7490;
-  --pass: #1f7a3d;
-  --fail: #b42318;
-  --warn: #9a6400;
-  --model: #c2410c;
-  --browser: #2563eb;
-  --other: #8b8697;
-  --code-bg: #efedf3;
+  --ink: #1c1a26;
+  --muted: #5c5870;
+  --rule: #e0dcea;
+  --accent: #6a3fd1;
+  --accent-soft: #ece6fd;
+  --assure: #9a7200;
+  --warn: #b85400;
+  --run: #1f6fa8;
+  --pass: #17845a;
+  --fail: #c8323f;
+  --code-bg: #efedf5;
+  --term: #15141c;
   --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
   --body: "Lexend", "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #15131b; --surface: #1d1a25; --ink: #ece9f2; --muted: #a8a2b6; --rule: #332e3f;
-    --accent: #f06bbd; --accent-soft: #3a1830; --run: #5fd0e6; --pass: #5fd68a; --fail: #ff8a7a; --warn: #f2c25c;
-    --model: #fb923c; --browser: #60a5fa; --other: #8f88a0; --code-bg: #262231; color-scheme: dark;
+    --bg: #131219; --surface: #1c1a25; --ink: #ecebf3; --muted: #a7a2ba; --rule: #312d40;
+    --accent: #b388ff; --accent-soft: #2c2350; --assure: #ffd66b; --warn: #ffa45c; --run: #9fdcff; --pass: #7fe3b5; --fail: #ff8b94;
+    --code-bg: #25222f; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #15131b; --surface: #1d1a25; --ink: #ece9f2; --muted: #a8a2b6; --rule: #332e3f;
-  --accent: #f06bbd; --accent-soft: #3a1830; --run: #5fd0e6; --pass: #5fd68a; --fail: #ff8a7a; --warn: #f2c25c;
-  --model: #fb923c; --browser: #60a5fa; --other: #8f88a0; --code-bg: #262231; color-scheme: dark;
+  --bg: #131219; --surface: #1c1a25; --ink: #ecebf3; --muted: #a7a2ba; --rule: #312d40;
+  --accent: #b388ff; --accent-soft: #2c2350; --assure: #ffd66b; --warn: #ffa45c; --run: #9fdcff; --pass: #7fe3b5; --fail: #ff8b94;
+  --code-bg: #25222f; color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--ink); font: 300 17px/1.7 var(--body); padding-inline: 20px; padding-block: 0 72px; }
+body { background: var(--bg); color: var(--ink); font: 300 17px/1.7 var(--body); padding-inline: 16px; padding-block: 0 72px; margin: 0; }
 main { max-width: 980px; margin-inline: auto; display: grid; gap: 64px; }
 h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; margin: 0; }
 h1 { font-size: clamp(2.3rem, 5.4vw, 3.6rem); font-weight: 700; letter-spacing: -0.01em; }
@@ -55,33 +53,36 @@ section { display: grid; gap: 18px; min-width: 0; }
 .nav { padding-block: 22px 0; display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.92rem; }
 .nav a { text-decoration: none; }
 .nav a[aria-current="page"] { color: var(--ink); font-weight: 500; }
-
 header.top { padding-block: 36px 0; display: grid; gap: 20px; }
 .lede { font-size: 1.22rem; color: var(--muted); }
 
-/* the one-breath answer */
-.breath { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.breath { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
 .breath > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
-.breath .who { font: 500 0.78rem/1 var(--mono); color: var(--run); }
+.breath .who { font: 500 0.78rem/1 var(--mono); color: var(--accent); }
 .breath p { color: var(--muted); font-size: 0.97rem; }
 
-/* picture + words */
 .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 28px; align-items: start; }
 @media (max-width: 820px) { .pair { grid-template-columns: 1fr; } }
 .words { display: grid; gap: 14px; }
 .figure { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 18px; min-width: 0; display: grid; gap: 10px; }
-.figure figcaption, .cap { font-size: 0.86rem; color: var(--muted); }
-pre.mermaid { margin: 0; overflow-x: auto; background: transparent; text-align: center; font-family: var(--body); }
+.cap { font-size: 0.86rem; color: var(--muted); }
+pre.mermaid { margin: 0; overflow-x: auto; background: transparent; text-align: center; font-family: var(--body); white-space: normal; }
 
-/* real examples */
-.cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-.case { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 16px; display: grid; gap: 8px; align-content: start; }
-.tag { font: 600 0.74rem/1 var(--mono); letter-spacing: 0.05em; padding: 5px 8px; border-radius: 6px; justify-self: start; border: 1px solid currentColor; }
-.tag.product { color: var(--fail); } .tag.test { color: var(--warn); } .tag.model { color: var(--run); } .tag.clean { color: var(--pass); } .tag.none { color: var(--muted); }
-.case p { font-size: 0.95rem; color: var(--muted); }
-.case b { font-weight: 600; color: var(--ink); }
+/* the band, in text */
+.band { background: var(--term); color: #e9e7f2; border-radius: 10px; padding: 14px 16px; font: 500 0.86rem/1.6 var(--mono); overflow-x: auto; white-space: pre; }
+.band .chip { background: #2c2350; color: #b388ff; font-weight: 600; } .band .idle { background: #1c1a2b; color: #8480a3; }
+.band .btn { color: #9fc6ff; font-weight: 600; } .band .a { color: #ffd66b; } .band .d { color: #8480a3; } .band .p { color: #7fe3b5; }
+.band .f { color: #ff8b94; } .band .r { color: #9fdcff; } .band .w { color: #ffa45c; } .band .m { color: #8d7af6; }
+.rows { display: grid; gap: 10px; }
+.rows > div { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 12px; align-items: start; }
+.rows b { font: 600 0.85rem/1.6 var(--mono); color: var(--accent); }
+.rows p { color: var(--muted); font-size: 0.97rem; }
 
-/* charts */
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.mode { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.mode .k { font: 600 0.78rem/1 var(--mono); color: var(--warn); }
+.mode p { font-size: 0.95rem; color: var(--muted); }
+
 .chart { width: 100%; height: auto; display: block; }
 .chart text { fill: var(--muted); font: 400 12px var(--body); }
 .chart .lbl { fill: var(--ink); }
@@ -89,26 +90,24 @@ pre.mermaid { margin: 0; overflow-x: auto; background: transparent; text-align: 
 .chart .grid { stroke: var(--rule); stroke-width: 1; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.85rem; color: var(--muted); }
 .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; background: var(--c); vertical-align: -1px; }
-.stack { display: flex; height: 34px; border-radius: 8px; overflow: hidden; border: 1px solid var(--rule); }
-.stack > div { display: grid; place-items: center; color: #fff; font: 500 0.8rem var(--mono); min-width: 0; white-space: nowrap; }
-.big { font: 700 2.6rem/1 var(--display); font-variant-numeric: tabular-nums; }
 .meters { display: grid; gap: 14px; }
 .meter { display: grid; gap: 6px; }
 .meter .bar { height: 12px; border-radius: 6px; background: var(--code-bg); overflow: hidden; }
-.meter .bar > i { display: block; height: 100%; background: var(--c); }
+.meter .bar > i { display: block; height: 100%; background: var(--assure); }
 .meter .row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.92rem; }
+.verdict { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--fail); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; }
+.verdict dl { display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 0.95rem; }
+.verdict dt { font: 500 0.85rem/1.6 var(--mono); color: var(--muted); }
+.verdict dd { margin: 0; }
 
-/* glossary */
 dl.gloss { display: grid; grid-template-columns: minmax(130px, 200px) minmax(0, 1fr); gap: 0; margin: 0; border-top: 1px solid var(--rule); }
 dl.gloss dt, dl.gloss dd { margin: 0; padding: 12px 0; border-bottom: 1px solid var(--rule); }
 dl.gloss dt { font-weight: 600; padding-right: 16px; }
 dl.gloss dd { color: var(--muted); }
 @media (max-width: 560px) { dl.gloss { grid-template-columns: 1fr; } dl.gloss dt { border-bottom: 0; padding-bottom: 0; } }
-
 .steps { display: grid; gap: 10px; counter-reset: s; padding: 0; margin: 0; list-style: none; }
 .steps li { counter-increment: s; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; }
 .steps li::before { content: counter(s); font: 700 1rem/34px var(--display); text-align: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
-.steps code { white-space: nowrap; }
 footer { color: var(--muted); font-size: 0.88rem; border-top: 1px solid var(--rule); padding-top: 18px; }
 </style>
 
@@ -116,222 +115,183 @@ footer { color: var(--muted); font-size: 0.88rem; border-top: 1px solid var(--ru
   <nav class="nav" aria-label="Pages">
     <a href="index.html">Field Guide</a>
     <a href="explainer.html" aria-current="page">Explained simply</a>
-    <a href="https://github.com/4DvAnCeBoY/kane-qe">GitHub</a>
+    <a href="https://github.com/4DvAnCeBoY/kane-qe/tree/v2">GitHub (v2)</a>
   </nav>
 
   <header class="top">
-    <div class="eyebrow">kane-qe, explained simply</div>
-    <h1>A robot tester you can talk to, and a dashboard that tells you what really happened</h1>
-    <p class="lede">You describe a test in normal words. An AI clicks through the website like a person would. kane-qe shows you every click as it happens, and when something breaks, it works out whether the website is broken or the test was asked to do something wrong.</p>
+    <div class="eyebrow">kane-qe v2, explained simply</div>
+    <h1>A dashboard light for your robot tester</h1>
+    <p class="lede">An AI tester clicks through a website for you, and a test takes a minute or two. kane-qe v2 is a small strip above where you type that tells you, without asking, what the tester is doing right now, what just broke and why, and whether the code you just changed has been tested at all.</p>
   </header>
 
   <section aria-labelledby="who-h">
     <div class="eyebrow">The cast</div>
-    <h2 id="who-h">Five things working together</h2>
+    <h2 id="who-h">Who does what</h2>
     <div class="breath">
-      <div><span class="who">you</span><h3>The tester</h3><p>You write what to check, like “add an iPod to the cart and make sure the total is right”.</p></div>
-      <div><span class="who">Claude Code</span><h3>Your assistant</h3><p>The AI coding app you already chat with. It can start tests for you and explain the results.</p></div>
-      <div><span class="who">kane-qe</span><h3>The dashboard</h3><p>This project. A panel inside Claude Code with tabs for running, reading and organising tests.</p></div>
-      <div><span class="who">kane-cli</span><h3>The messenger</h3><p>A command-line tool from LambdaTest that carries your test to KaneAI and brings results back.</p></div>
-      <div><span class="who">KaneAI</span><h3>The robot tester</h3><p>An AI that opens a real Chrome browser, reads the page, decides what to click, and checks what you asked.</p></div>
+      <div><span class="who">you</span><h3>The tester</h3><p>You say what to check: “add an iPod to the cart and make sure it shows 1 item”.</p></div>
+      <div><span class="who">Claude Code</span><h3>Your assistant</h3><p>The AI you chat with. It writes code, and it starts tests when you ask.</p></div>
+      <div><span class="who">kane-cli</span><h3>The robot tester</h3><p>Opens a real browser, clicks like a person, checks what you asked, and keeps a diary of every step on disk.</p></div>
+      <div><span class="who">kane-qe v2</span><h3>The dashboard light</h3><p>Reads that diary once a second and shows it. It never starts a test itself, and never makes anything up.</p></div>
+    </div>
+    <div class="figure">
+      <pre class="mermaid">
+sequenceDiagram
+  participant You
+  participant Claude
+  participant Kane as kane-cli
+  participant Disk as its diary on disk
+  participant Band as the band
+  You->>Claude: test adding to the cart
+  Claude->>Kane: kane-cli run "…"
+  Kane->>Disk: I'm running (a note with my process id)
+  loop every step
+    Kane->>Disk: step done: Clicking Add to cart
+    Band->>Disk: anything new? (every second)
+    Disk-->>Band: one more line
+    Band-->>You: shows the step
+  end
+  Kane->>Disk: finished: passed or failed, and why
+  Band-->>You: ✓ 1 passed, or ✗ and the step it failed on
+      </pre>
+      <p class="cap">The band only reads. If kane-cli did not write it down, the band does not show it.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="band-h">
+    <div class="eyebrow">The band</div>
+    <h2 id="band-h">Three rows, always there</h2>
+    <div class="pair">
+      <div class="words">
+        <p>The band sits just above where you type, in every session. The little helmet on the left is kane's mascot: its eyes move while a test runs and stay still when nothing does. So a glance tells you if anything is happening.</p>
+        <div class="rows">
+          <div><b>row 1</b><p>What kane-cli is doing: <em>idle</em>, <em>running</em> one test with its time, several runs as coloured squares, or a suite as <em>5 of 12 tests done</em>.</p></div>
+          <div><b>row 2</b><p>The detail: the step a test is on, or the test that just failed and where, or a warning that code changed and nobody tested it.</p></div>
+          <div><b>row 3</b><p>How much of what the product should do has been proven by a real test. Always yellow, always last.</p></div>
+        </div>
+      </div>
+      <div class="figure">
+        <div class="band"><span class="m">▄▀▄▄▀▄ </span>  <span class="chip"> suite </span> <span class="p">■■■■</span><span class="f">■</span><span class="r">■■■</span><span class="d">□□□□</span> <b>5 of 12 tests done</b> <span class="d">· 3 running · 4 left</span> <span class="btn">[ Open ]</span>
+<span class="m">▀▀▀▀▀▀▀▀</span> <span class="f">✗ checkout_guest</span> <span class="d">failed on</span> Fill the shipping address
+<span class="m">▀▀▀▀▀▀▀▀</span> <span class="a">assurance ━━━━━━━━</span><span class="d">────────</span> <span class="a"><b>47%</b></span> <span class="d">proven · 4 use cases</span></div>
+        <div class="legend"><span style="--c:var(--pass)">passed</span><span style="--c:var(--fail)">failed</span><span style="--c:var(--run)">running</span><span style="--c:var(--muted)">waiting</span></div>
+        <p class="cap">One square per test. A failure takes row 2 the moment it happens, while the rest of the suite keeps going.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="runs-h">
+    <div class="eyebrow">Real runs</div>
+    <h2 id="runs-h">What the band saw while the video was recorded</h2>
+    <div class="words">
+      <div class="words">
+        <p>Every bar is one real kane-cli run from the walkthrough video, placed where it started and stopped. Some ran alone, some at the same time, some as part of a suite. The band followed all of them by itself: nobody told it a run had started.</p>
+        <p>When two or more bars overlap, row 1 turns into squares, one per run. When they all end, it goes back to <em>idle</em> with how many passed and failed.</p>
+      </div>
+      <div class="figure">
+        <svg class="chart" id="runs-chart" viewBox="0 0 720 300" role="img" aria-label="Real kane-cli runs over the recording, as bars from start to end, coloured by result"></svg>
+        <div class="legend"><span style="--c:var(--pass)">passed</span><span style="--c:var(--fail)">failed</span></div>
+        <p class="cap" id="runs-cap">Minutes from the start of the recording, before waiting stretches were sped up. 7 runs: 4 passed, 3 failed. The failures are kane's own reports, shown as they came: one run started in the wrong page, and two saved tests stopped for want of a start URL (the suite ran without <code>--url</code>, and those tests name none).</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="why-h">
+    <div class="eyebrow">When a test fails</div>
+    <h2 id="why-h">It tells you what kane found, and nothing it didn't</h2>
+    <div class="pair">
+      <div class="words">
+        <p>When kane-cli's test fails, kane investigates and writes down a verdict: the reason, what kind of problem it is, how serious, and how sure it is. kane-qe shows exactly that, with the step it failed on.</p>
+        <p>It never guesses. If kane-cli did not give a reason, the pane says so. In this real case the button kane was asked to press is on the page but hidden, so the verdict is worth reading carefully: kane calls it a product defect; a person would call it a test that asked for a button users cannot see.</p>
+      </div>
+      <div class="verdict" aria-label="A real verdict">
+        <h3>Click Enable Notification, then choose Safari so the wizard reaches step 3.</h3>
+        <dl>
+          <dt>why</dt><dd>The previous-step control accepted the click but the guided wizard stayed on step 3 instead of moving back to step 2.</dd>
+          <dt>kind</dt><dd>functional defect · major · 90% sure</dd>
+          <dt>where</dt><dd>press the Tab key to focus the wizard's previous-step navigation button</dd>
+        </dl>
+        <p class="cap">What the pane shows for a real run on kaneai-playground.lambdatest.io. <em>where</em> is the last step kane took before it gave up.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="change-h">
+    <div class="eyebrow">After a change</div>
+    <h2 id="change-h">Did anyone test what Claude just changed?</h2>
+    <p>Claude can change code in seconds. It is easy to finish without checking the result in a browser. kane-qe notices which files Claude changed (not docs, not tool folders), and when Claude finishes, it does one of three things. You choose which.</p>
+    <div class="modes">
+      <div class="mode"><span class="k">offer · the default</span><h3>A reminder with a button</h3><p>The band says <em>⚠ 1 file changed, untested</em>. Press <em>Test this change</em>: you get the saved tests that already cover those files, with how they did last time, or Claude writes a new test from the change.</p></div>
+      <div class="mode"><span class="k">auto</span><h3>Claude tests before it stops</h3><p>When Claude tries to finish, it is asked once to test the change first. In a real try it did: it ran kane-cli and reported back. If it still finishes without a test, the band goes back to the button.</p></div>
+      <div class="mode"><span class="k">off</span><h3>Quiet</h3><p>Nothing. The band never mentions changes.</p></div>
     </div>
     <div class="figure">
       <pre class="mermaid">
 flowchart LR
-  Y["You<br/>“check the cart total”"] --> C["Claude Code"]
-  C --> Q["kane-qe<br/>dashboard"]
-  Q --> K["kane-cli"]
-  K --> A["KaneAI<br/>robot tester"]
-  A --> W[("The website<br/>in real Chrome")]
-  A -. "every step, live" .-> Q
-  A -. "evidence pack<br/>screenshots, network, console" .-> Q
-  Q -. "who is to blame?" .-> Y
+  A["Claude edits<br/>addToCart.ts"] --> B["Claude finishes"]
+  B --> C["⚠ 1 file changed, untested"]
+  C --> D["Test this change"]
+  D --> E["cart_add_test.md<br/>covers it: Run it"]
+  E --> F["Claude runs kane-cli"]
+  F --> G["The run ends:<br/>the warning goes away"]
       </pre>
-    </div>
-  </section>
-
-  <section aria-labelledby="run-h">
-    <div class="eyebrow">One test, start to finish</div>
-    <h2 id="run-h">What happens when you press Run</h2>
-    <div class="pair">
-      <div class="words">
-        <p><strong>1. You ask.</strong> Type <code>/kane</code> and a sentence, or press Run in the panel, or just ask Claude.</p>
-        <p><strong>2. A quick sanity check.</strong> If your sentence never says what to verify (“…and assert…”), kane-qe pauses and offers to add a check, so you don't pay for a test that proves nothing.</p>
-        <p><strong>3. The robot works.</strong> KaneAI opens the site and does the steps. You watch each one appear in the panel, above the prompt, and in the status line.</p>
-        <p><strong>4. A verdict.</strong> Passed or failed, plus anything it was asked to remember, like a price or an error message.</p>
-        <p><strong>5. The evidence.</strong> Every run saves an <em>evidence pack</em>: a screenshot per step, every network request and every browser console message. kane-qe reads it for you.</p>
-      </div>
-      <div class="figure">
-        <pre class="mermaid">
-sequenceDiagram
-  autonumber
-  actor You
-  participant P as kane-qe panel
-  participant K as KaneAI
-  participant S as Website
-  You->>P: "Search iPod, add to cart, assert total"
-  P->>P: has a check? yes
-  P->>K: run it
-  loop each step
-    K->>S: look, decide, click or type
-    K-->>P: step done
-  end
-  K-->>P: verdict + evidence pack
-  P-->>You: passed / failed + who owns it
-        </pre>
-      </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="blame-h">
-    <div class="eyebrow">The clever part</div>
-    <h2 id="blame-h">When a test fails, whose fault is it?</h2>
-    <p>A failed test does not always mean the website is broken. Maybe the test asked for something impossible, maybe it ran out of time, maybe the robot got confused. kane-qe looks at the evidence and sorts it out, so you only file bugs that are real.</p>
-    <div class="pair">
-      <div class="figure">
-        <pre class="mermaid">
-flowchart TD
-  F["Test failed"] --> R{"Did it even start?<br/>(credits, setup)"}
-  R -- no --> N["Didn't run<br/>top up or fix setup"]
-  R -- yes --> E{"Did the website show<br/>NEW errors right where<br/>it failed?"}
-  E -- "yes" --> B["Likely a real bug<br/>(or needs a look)"]
-  E -- "no" --> W{"What does KaneAI<br/>say went wrong?"}
-  W -- "wrong data or<br/>missing button" --> T["The test is wrong"]
-  W -- "ran out of steps<br/>or time" --> S["The settings stopped it"]
-  W -- "it got confused" --> M["The robot (AI) slipped"]
-        </pre>
-      </div>
-      <div class="words">
-        <p><strong>Noise is ignored.</strong> Big sites log errors all the time, from ads and trackers. kane-qe ignores errors from other companies' scripts and errors the page was already showing before the failure. Only <em>new</em> errors from the website itself count.</p>
-        <p><strong>It tells you what to do next.</strong> A real bug gets a <em>Draft bug report</em> button. A wrong test gets <em>Fix the test with Claude</em>. A setting problem says which setting to raise.</p>
-      </div>
-    </div>
-    <div class="cases">
-      <div class="case"><span class="tag model">THE ROBOT SLIPPED</span><h3>Amazon, from India</h3><p>Asked to add headphones to the cart on amazon.com, the robot kept the delivery country as India, where the item couldn't ship, and got stuck. Amazon logged <b>58 console errors</b>, all from ads or already there before. <b>Not a product bug.</b></p></div>
-      <div class="case"><span class="tag test">THE TEST IS WRONG</span><h3>Searching “zzqxwv”</h3><p>The test expected at least one product for a nonsense word. The site correctly said “no products”. KaneAI called it <b>test data</b>, so kane-qe said: fix the test.</p></div>
-      <div class="case"><span class="tag test">THE TEST IS WRONG</span><h3>Switch to euros</h3><p>The test looked for a currency menu this demo shop doesn't show. KaneAI: <b>locator</b> problem. The website was fine.</p></div>
-      <div class="case"><span class="tag none">SETTINGS STOPPED IT</span><h3>Empty review form</h3><p>The step limit was set to 8, and the run used them all just before reading the warning. Raise the limit, rerun.</p></div>
-      <div class="case"><span class="tag none">DIDN'T RUN</span><h3>Out of credits</h3><p>The account hit zero mid-run. That's never counted as a failed test; the panel says to top up.</p></div>
-      <div class="case"><span class="tag clean">CLEAN PASS</span><h3>Cart quantity × 2</h3><p>iPod Nano $122.00 × 2 = <b>$244.00</b> on the cart page. Passed, and the website logged no errors of its own.</p></div>
-    </div>
-  </section>
-
-  <section aria-labelledby="explore-h">
-    <div class="eyebrow">Real numbers</div>
-    <h2 id="explore-h">Exploring a shop, one scenario at a time</h2>
-    <p>Each test costs <strong>credits</strong>, KaneAI's currency. These are 10 real scenarios run against LambdaTest's demo shop while building this project. Longer journeys cost more; a confused robot costs more still.</p>
-    <div class="figure">
-      <svg class="chart" id="credits-chart" viewBox="0 0 720 420" role="img" aria-label="Credits spent per scenario"></svg>
-      <div class="legend"><span style="--c: var(--pass)">passed</span><span style="--c: var(--warn)">failed: the test was wrong or limited</span></div>
-      <p class="cap">Guest checkout cost the most (52 credits) partly because the robot clicked “add to cart” and “Guest Checkout” twice each. kane-qe flags that as <em>wasted effort</em>.</p>
-    </div>
-  </section>
-
-  <section aria-labelledby="time-h">
-    <div class="eyebrow">Where the time goes</div>
-    <h2 id="time-h">Thinking vs. clicking</h2>
-    <div class="pair">
-      <div class="words">
-        <p>A run's time splits three ways: the <strong>AI thinking</strong> (reading the page and deciding), the <strong>browser working</strong> (clicking, loading, taking screenshots), and <strong>waiting</strong> (pages loading, setup, saving evidence).</p>
-        <p>In the guest-checkout run below, more than half the time was the AI thinking. That's normal for a long journey, and it's why a clear, specific objective is cheaper and faster than a vague one.</p>
-      </div>
-      <div class="figure">
-        <div class="big" id="total-time">165.5 s</div>
-        <div class="stack" id="time-stack" role="img" aria-label="Time split of the guest checkout run"></div>
-        <div class="legend"><span style="--c: var(--model)">AI thinking</span><span style="--c: var(--browser)">browser</span><span style="--c: var(--other)">waiting &amp; overhead</span></div>
-      </div>
+      <p class="cap">Any kane-cli run that starts after the last change clears the warning, whether it passes or not: the change has been looked at.</p>
     </div>
   </section>
 
   <section aria-labelledby="assure-h">
-    <div class="eyebrow">From a document to proof</div>
-    <h2 id="assure-h">Turning a requirement into tests that prove it</h2>
+    <div class="eyebrow">Assurance</div>
+    <h2 id="assure-h">Proven, not just planned</h2>
     <div class="pair">
       <div class="words">
-        <p>Teams write requirements: “a shopper can search; when nothing matches, show a message”. The <strong>Assurance</strong> tab feeds that document to KaneAI, which lists the <em>use cases</em> in it, asks you about anything unclear (you answer with a button), and writes one test per scenario.</p>
-        <p>Then you run those tests. Two numbers tell you where you stand: <strong>designed</strong> (does every promise have a test?) and <strong>proven</strong> (did those tests actually pass?).</p>
+        <p>A requirement says what the product should do. kane-cli can turn it into <strong>use cases</strong>, design tests for each, and record which ones a real run has <strong>proven</strong>. Row 3 of the band shows that number all the time.</p>
+        <p>These are the real numbers of the demo project. Every acceptance criterion is designed and proven, so the project reads 100%. But the second use case has no test designed at all. That is why the Assurance tab shows a card per use case: a high total can still hide a gap.</p>
       </div>
       <div class="figure">
-        <pre class="mermaid">
-flowchart LR
-  D["Requirement<br/>doc or ticket"] --> U["Use cases"]
-  U -- "questions?" --> A["You answer<br/>with a button"]
-  A --> U
-  U --> T["Tests written<br/>for you"]
-  T --> R["Run them"]
-  R --> P["Coverage:<br/>designed + proven"]
-        </pre>
-        <div class="meters" aria-label="Coverage for the demo shop search requirement">
-          <div class="meter"><div class="row"><span>Search the catalog: designed</span><b>100%</b></div><div class="bar"><i style="width:100%; --c: var(--run)"></i></div></div>
-          <div class="meter"><div class="row"><span>Search the catalog: proven by runs</span><b>100% · 5 of 5</b></div><div class="bar"><i style="width:100%; --c: var(--pass)"></i></div></div>
-          <div class="meter"><div class="row"><span>View a product from results: designed</span><b>0%</b></div><div class="bar"><i style="width:2%; --c: var(--warn)"></i></div></div>
+        <div class="meters">
+          <div class="meter"><div class="row"><span>Acceptance criteria designed</span><b>5 of 5 · 100%</b></div><div class="bar"><i style="width:100%"></i></div></div>
+          <div class="meter"><div class="row"><span>Acceptance criteria proven</span><b>5 of 5 · 100%</b></div><div class="bar"><i style="width:100%"></i></div></div>
+          <div class="meter"><div class="row"><span>Search the product catalog</span><b>designed 100% · proven 100%</b></div><div class="bar"><i style="width:100%"></i></div></div>
+          <div class="meter"><div class="row"><span>View a product from search results</span><b>designed 0% · 1 to design</b></div><div class="bar"><i style="width:0%"></i></div></div>
         </div>
-        <p class="cap">Real result: one PRD, 2 use cases found, 3 tests designed for the first, all 3 passing.</p>
+        <p class="cap">From <code>kane-cli cover gaps --json</code> in the demo project. Reading it costs no credits.</p>
       </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="where-h">
-    <div class="eyebrow">The dashboard</div>
-    <h2 id="where-h">Six tabs, one job each</h2>
-    <div class="breath">
-      <div><span class="who">Run</span><h3>Start and watch</h3><p>Type a test, press Run, see each step live. Several runs at once show as a list.</p></div>
-      <div><span class="who">Insights</span><h3>What really happened</h3><p>Whose fault, wasted effort, a step-by-step timeline with screenshots.</p></div>
-      <div><span class="who">Tests</span><h3>Your saved tests</h3><p>Rerun them here, on LambdaTest's cloud machines, or on phones and tablets.</p></div>
-      <div><span class="who">Assurance</span><h3>Requirements → proof</h3><p>The document-to-tests loop above, with coverage numbers.</p></div>
-      <div><span class="who">History</span><h3>Everything so far</h3><p>Trends, credits spent, page speed, and Sites: what you've explored on each website.</p></div>
-      <div><span class="who">Setup</span><h3>Is everything ready?</h3><p>Login, credits, settings, and checks for phone testing tools.</p></div>
     </div>
   </section>
 
   <section aria-labelledby="gloss-h">
-    <div class="eyebrow">Words you'll see</div>
+    <div class="eyebrow">Words</div>
     <h2 id="gloss-h">A tiny glossary</h2>
     <dl class="gloss">
-      <dt>Objective</dt><dd>The test, in plain words: what to do and what to check.</dd>
-      <dt>Assertion</dt><dd>The “check” part: “assert the total is $244”. Without one, a test can't fail, so it proves nothing.</dd>
-      <dt>Evidence pack</dt><dd>One file per run with every screenshot, network request and console message. Proof of what happened.</dd>
-      <dt>Credits</dt><dd>What KaneAI charges per run. A short test is about 10–20; a long journey 40–60.</dd>
-      <dt>Flaky</dt><dd>A test that sometimes passes and sometimes fails with no change. kane-qe can rerun one 3 times to check.</dd>
-      <dt>Grid</dt><dd>LambdaTest's cloud computers (HyperExecute) that run your tests in parallel, including on virtual phones.</dd>
-      <dt>Coverage</dt><dd>How much of a requirement has tests (designed) and how much passed (proven).</dd>
-      <dt>Console / network errors</dt><dd>Problems the website reports in the browser's developer tools. New ones at the failing step are the strongest hint of a real bug.</dd>
+      <dt>run</dt><dd>One test kane-cli carries out: an objective in plain words, or a saved test.</dd>
+      <dt>saved test</dt><dd>A test kept as a file (<code>…_test.md</code>) so it can be run again the same way.</dd>
+      <dt>suite</dt><dd>Several saved tests run together, a few at a time.</dd>
+      <dt>step</dt><dd>One thing the tester did: opened a page, typed, clicked, checked.</dd>
+      <dt>verdict</dt><dd>kane-cli's own explanation of a failure: why, what kind, how serious, how sure.</dd>
+      <dt>evidence</dt><dd>The pack kane-cli keeps for every run: screenshots, network, console, each step.</dd>
+      <dt>assurance</dt><dd>How much of a requirement a real test has proven.</dd>
+      <dt>use case</dt><dd>One thing a user does with the product, taken from the requirement.</dd>
+      <dt>band · pane</dt><dd>The three rows above the prompt, and the side panel that opens with <code>/kane</code>.</dd>
     </dl>
   </section>
 
   <section aria-labelledby="try-h">
     <div class="eyebrow">Try it</div>
-    <h2 id="try-h">Three steps to your first test</h2>
+    <h2 id="try-h">Three steps</h2>
     <ol class="steps">
-      <li><div>Install the tester: <code>npm install -g @testmuai/kane-cli</code>, then sign in from Claude with <code>! kane-cli login --oauth</code>.</div></li>
-      <li><div>Add kane-qe to Claude Code: <code>/plugin marketplace add 4DvAnCeBoY/kane-qe</code>, then <code>/plugin install kane-qe@kane-qe</code>.</div></li>
-      <li><div>Run something: <code>/kane https://ecommerce-playground.lambdatest.io search iPod and assert at least 4 results</code>.</div></li>
+      <li><span>Install kane-cli and sign in: <code>npm install -g @testmuai/kane-cli</code>, then <code>! kane-cli login --oauth</code> in Claude Code.</span></li>
+      <li><span>Load the mod: <code>claude --plugin-dir kane-qe/kane-qe</code> from a clone of the v2 branch. The band appears.</span></li>
+      <li><span>Ask Claude: “test that searching for iPod lists at least 4 products on ecommerce-playground.lambdatest.io”. Watch the band.</span></li>
     </ol>
-    <p>Want every button and shortcut? The <a href="index.html">Field Guide</a> has the full reference and a 5-minute video.</p>
   </section>
 
-  <footer>kane-qe · MIT licensed · numbers on this page come from real runs against LambdaTest's demo shop (ecommerce-playground.lambdatest.io).</footer>
+  <footer>kane-qe v2 · every number on this page is from a real kane-cli run · <a href="index.html">the Field Guide</a> has the full reference.</footer>
 </main>
 
 <script>
-  // Credits per scenario: real runs on ecommerce-playground.lambdatest.io.
-  const RUNS = [
-    { label: 'Guest checkout, empty form', credits: 52.35, ok: true },
-    { label: 'Compare two iPods', credits: 43.25, ok: true },
-    { label: 'Cart quantity × 2', credits: 34.66, ok: true },
-    { label: 'Switch currency to euro', credits: 28.43, ok: false },
-    { label: 'Sort laptops by price', credits: 26.55, ok: true },
-    { label: 'Wishlist while logged out', credits: 23.81, ok: true },
-    { label: 'Register with empty form', credits: 20.87, ok: true },
-    { label: 'Login, wrong password', credits: 20.83, ok: true },
-    { label: 'Empty review (step limit)', credits: 20.52, ok: false },
-    { label: 'Search “zzqxwv”, expect results', credits: 18.95, ok: false },
-  ];
-  const svg = document.getElementById('credits-chart');
+  // Real kane-cli runs from the walkthrough recording: start and end in minutes, and the result.
+  const RUNS = /*RUNS*/[{"label": "Open the Laptops category", "start": 0.43, "end": 1.74, "ok": true}, {"label": "Search for iPod Shuffle", "start": 2.12, "end": 3.79, "ok": true}, {"label": "Enable Notification, Safari, go back", "start": 2.12, "end": 3.33, "ok": false}, {"label": "suite: login_page_test.md", "start": 4.11, "end": 4.26, "ok": false}, {"label": "suite: cart_add_test.md", "start": 4.11, "end": 4.27, "ok": false}, {"label": "suite: search_ipod_test.md", "start": 4.19, "end": 4.48, "ok": true}, {"label": "search_ipod_test.md (the change)", "start": 5.31, "end": 5.79, "ok": true}];
+  const svg = document.getElementById('runs-chart');
   const NS = 'http://www.w3.org/2000/svg';
-  const W = 720, rowH = 36, padTop = 14, left = 230, right = 70;
-  const max = 60;
-  const scale = v => ((W - left - right) * v) / max;
   const el = (name, attrs, text) => {
     const n = document.createElementNS(NS, name);
     for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
@@ -339,52 +299,35 @@ flowchart LR
     svg.appendChild(n);
     return n;
   };
-  const height = padTop + RUNS.length * rowH + 30;
-  svg.setAttribute('viewBox', `0 0 ${W} ${height}`);
-  for (const tick of [0, 20, 40, 60]) {
-    const x = left + scale(tick);
-    el('line', { x1: x, x2: x, y1: padTop - 4, y2: padTop + RUNS.length * rowH, class: 'grid' });
-    el('text', { x, y: padTop + RUNS.length * rowH + 18, 'text-anchor': 'middle' }, `${tick}`);
-  }
-  el('text', { x: W - right + 8, y: padTop + RUNS.length * rowH + 18 }, 'credits');
-  RUNS.forEach((r, i) => {
-    const y = padTop + i * rowH;
-    el('text', { x: left - 10, y: y + rowH / 2 + 4, 'text-anchor': 'end', class: 'lbl' }, r.label);
-    const bar = el('rect', { x: left, y: y + 7, width: Math.max(2, scale(r.credits)), height: rowH - 14, rx: 4 });
-    bar.style.fill = r.ok ? 'var(--pass)' : 'var(--warn)';
-    el('text', { x: left + scale(r.credits) + 8, y: y + rowH / 2 + 4, class: 'val' }, r.credits.toFixed(2));
-  });
-
-  // Time split of the guest-checkout run (from its evidence pack).
-  const parts = [
-    { name: 'AI thinking', s: 83.4, c: 'var(--model)' },
-    { name: 'browser', s: 57.0, c: 'var(--browser)' },
-    { name: 'waiting', s: 25.1, c: 'var(--other)' },
-  ];
-  const total = parts.reduce((a, p) => a + p.s, 0);
-  const stack = document.getElementById('time-stack');
-  for (const p of parts) {
-    const d = document.createElement('div');
-    d.style.flex = String(p.s);
-    d.style.background = p.c;
-    d.textContent = `${Math.round((p.s / total) * 100)}%`;
-    d.title = `${p.name}: ${p.s} s`;
-    stack.appendChild(d);
+  if (RUNS.length) {
+    const W = 720, rowH = 30, padTop = 10, left = 250, right = 20;
+    const end = Math.ceil(Math.max(...RUNS.map(r => r.end)));
+    const x = m => left + ((W - left - right) * m) / end;
+    const height = padTop + RUNS.length * rowH + 30;
+    svg.setAttribute('viewBox', `0 0 ${W} ${height}`);
+    for (let m = 0; m <= end; m += end > 12 ? 4 : 2) {
+      el('line', { x1: x(m), x2: x(m), y1: padTop - 4, y2: padTop + RUNS.length * rowH, class: 'grid' });
+      el('text', { x: x(m), y: padTop + RUNS.length * rowH + 18, 'text-anchor': 'middle' }, `${m}`);
+    }
+    RUNS.forEach((r, i) => {
+      const y = padTop + i * rowH;
+      el('text', { x: left - 10, y: y + rowH / 2 + 4, 'text-anchor': 'end', class: 'lbl' }, r.label);
+      const bar = el('rect', { x: x(r.start), y: y + 7, width: Math.max(3, x(r.end) - x(r.start)), height: rowH - 14, rx: 4 });
+      bar.style.fill = r.ok ? 'var(--pass)' : 'var(--fail)';
+    });
   }
 </script>
 <script>
-  // Diagrams: claude.ai renders <pre class="mermaid"> itself; anywhere else (GitHub Pages)
-  // load mermaid once and draw the ones still showing as text.
   window.addEventListener('load', () => setTimeout(() => {
     const pending = [...document.querySelectorAll('pre.mermaid')].filter(p => !p.querySelector('svg') && !p.dataset.processed);
     if (!pending.length) return;
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js';
-    s.onload = () => {
+    s.onload = async () => {
+      // Measure labels in the page's own font: drawn before it loads, the boxes come out too narrow.
+      await document.fonts.ready
       const dark = matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light';
-      window.mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', fontFamily: 'Lexend, sans-serif' });
-      // Render each diagram from its own source into its own box, one at a time. The browser turned
-      // the "<br/>" in the source into elements, so put them back as text before handing it over.
+      window.mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', fontFamily: 'Lexend, sans-serif', flowchart: { padding: 14, wrappingWidth: 220 } });
       ;(async () => {
         let i = 0
         for (const node of pending) {

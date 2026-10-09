@@ -33,7 +33,9 @@ jobs:
           }
           wrap guide/kane-qe-guide.html _site/index.html
           wrap guide/explainer.html _site/explainer.html
-          cp guide/kane-qe-tour.mp4 _site/
+          # Whichever walkthrough and screenshots this branch has.
+          cp guide/*.mp4 _site/ 2>/dev/null || true
+          [ -d guide/v2 ] && mkdir -p _site/v2 && cp guide/v2/*.png _site/v2/ || true
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

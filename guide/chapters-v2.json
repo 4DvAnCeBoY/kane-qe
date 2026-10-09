@@ -1,0 +1,52 @@
+[
+  {
+    "t": 0.0,
+    "title": "The band",
+    "detail": "Always above the prompt: kane-cli is idle, and row 3 is requirement coverage. Nothing to start."
+  },
+  {
+    "t": 5.0,
+    "title": "Claude runs a test, the band follows",
+    "detail": "Ask Claude; within two seconds the band shows the run, its time and the step it is on. The mascot moves while it runs."
+  },
+  {
+    "t": 60.2,
+    "title": "The pane: runs and steps",
+    "detail": "/kane opens it. Press a run for its steps with their times."
+  },
+  {
+    "t": 73.5,
+    "title": "Several runs at once, and a failure",
+    "detail": "Runs started anywhere in this project: one cell per run, what is running now; a failure takes row 2 the moment it happens."
+  },
+  {
+    "t": 110.2,
+    "title": "Why it failed",
+    "detail": "kane\u2019s own verdict: why, what kind, how sure, where; the steps; Open evidence."
+  },
+  {
+    "t": 122.6,
+    "title": "A suite",
+    "detail": "kane-cli testrun: one cell per test, done \u00b7 running \u00b7 left; one row per test in the pane."
+  },
+  {
+    "t": 145.1,
+    "title": "After Claude changes code",
+    "detail": "An edit and no test since: the band warns. The card offers the saved test that covers it, with its last result."
+  },
+  {
+    "t": 170.9,
+    "title": "Test the change",
+    "detail": "Run it hands the saved test to Claude; when the run ends, the warning clears."
+  },
+  {
+    "t": 208.3,
+    "title": "Assurance",
+    "detail": "Designed and proven coverage from kane-cli cover gaps, and what each use case still owes."
+  },
+  {
+    "t": 219.6,
+    "title": "End",
+    "detail": "kane-qe v2: a band that watches kane-cli, a pane for runs and assurance, and a nudge to test what Claude changed."
+  }
+]

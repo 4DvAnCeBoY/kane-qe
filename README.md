@@ -6,6 +6,8 @@ Claude runs kane-cli; the mod reads what kane-cli leaves on disk and draws it: a
 
 ![The band while a test runs](guide/v2/band-running.png)
 
+**Read more:** the [Field Guide](https://claude.ai/artifact/Xp7W6L5sJQCm1tGB4w5TPo) (every band state, the pane, flows, use cases, guidelines and a chaptered walkthrough video recorded with real runs, also at [guide/kane-qe-v2-tour.mp4](guide/kane-qe-v2-tour.mp4)) · [Explained simply](https://claude.ai/artifact/H6DrA48p6UUnHCCdFErc9q) · [how v2 meets its design](guide/v2/design-coverage.md).
+
 > v1, the cockpit that starts runs itself (Insights, Tests, History and Setup tabs, nine model tools), is on the [`main`](https://github.com/4DvAnCeBoY/kane-qe/tree/main) branch.
 
 ## Install
@@ -85,6 +87,7 @@ The colours follow Claude Code's theme: the design's palette on dark themes, a d
 | `kane-qe/hooks/sources.ts` | The live-run pointer and byte offsets into event files |
 | `kane-qe/hooks/register.tsx` | Polling, hooks (edits, end of turn, `/kane`) and the drawing |
 | `kane-qe/hooks/mascot.ts` | The mascot: a cell grid in terminals, an image elsewhere |
+| `guide/` | The Field Guide and explainer pages, the walkthrough video and the script that records it (`KANE_DEMO_DIR=<project> guide/run_tour_v2.sh`), screenshots and the design coverage |
 | `kane-qe/tests/` | Adapter table, band states at 60/80/120 columns, recorded kane-cli streams replayed, band and pane on terminal and desktop, change tracking, stale pointers, assurance |
 
 ```
