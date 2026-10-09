@@ -619,7 +619,7 @@ async function draftObjective($: EngineInterface) {
 
 function autoInstruction(files: readonly string[], saved: readonly string[], url?: string): string {
   const rel = files.map(f => (f.startsWith(`${projectDir}/`) ? f.slice(projectDir.length + 1) : f))
-  const reuse = saved.length ? ` A saved test may already cover it: ${saved.slice(0, 3).map(s => `.testmuai/tests/${s}`).join(', ')} (kane-cli testmd run <file> --agent --headless).` : ''
+  const reuse = saved.length ? ` A saved test may already cover it: ${saved.slice(0, 3).map(s => `.testmuai/tests/${s}`).join(', ')} (kane-cli testmd run <file>${url ? ` --url ${url}` : ''} --agent --headless).` : ''
   const start = url ? ` --url ${url}` : ' --url <the app\'s start page>'
   return `kane-qe: you changed ${rel.join(', ')} and no kane-cli run has tested it yet. Before you finish, test the change in a browser with kane-cli (kane-cli run "<what a user does and what must be true>"${start} --agent --headless).${reuse} Then report the result.`
 }
@@ -694,9 +694,11 @@ async function act($: EngineInterface, a: string) {
     const hint = o.url ? '' : ' kane-cli needs a start page: pass --url with this app\'s URL unless `kane-cli config show` has a default_url.'
     void $.prompt.submit({ text: `Test my last change with kane-cli: kane-cli run "${o.objective.replace(/"/g, "'")}"${url} --agent --headless.${hint} Then report the result.` }).catch(() => undefined)
   } else if (k === 'saved') {
+    const o = await read($, offerAtom)
     await update($, viewAtom, v => ({ ...v, open: '' }))
     await update($, offerAtom, () => null)
-    void $.prompt.submit({ text: `Test my last change with the saved kane-cli test: kane-cli testmd run .testmuai/tests/${arg} --agent --headless. Then report the result.` }).catch(() => undefined)
+    const url = o?.url ? ` --url ${o.url}` : ''
+    void $.prompt.submit({ text: `Test my last change with the saved kane-cli test: kane-cli testmd run .testmuai/tests/${arg}${url} --agent --headless. Then report the result.` }).catch(() => undefined)
   } else if (k === 'offer-skip') {
     await update($, offerAtom, () => null)
     await update($, changeAtom, c => (c ? { ...c, shown: false } : c))

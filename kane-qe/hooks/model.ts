@@ -138,8 +138,12 @@ export function fold(run: Run, ev: Ev): Run {
     case 'runEnd': {
       const credits = ev.credits === undefined ? run.credits : (run.kind === 'testmd' ? (run.credits ?? 0) : 0) + ev.credits
       const facts = ev.status === 'failed' ? { why: ev.why ?? run.failure?.why ?? '', category: ev.category, severity: ev.severity, confidence: ev.confidence } : undefined
-      // A test file's run_end closes one of its steps, not the test.
-      if (run.kind === 'testmd') return { ...run, credits, failure: facts && facts.why ? { ...run.failure, ...facts } : run.failure }
+      // A test file's run_end closes one of its steps, not the test. kane's investigated verdict (it has a
+      // category) is kept over a later failure that has none, such as a retry refused for want of a URL.
+      if (run.kind === 'testmd') {
+        const keep = run.failure?.category && !facts?.category
+        return { ...run, credits, failure: facts && facts.why && !keep ? { ...run.failure, ...facts } : run.failure }
+      }
       const steps = closeSteps(run.steps, ev.status, ev.at)
       const failure = facts ? { ...facts, why: facts.why || 'kane-cli reported a failure', where: lastFailed(steps)?.text || [...steps].reverse().find(s => s.text)?.text } : undefined
       return { ...run, status: ev.status, endedAt: ev.at, steps, credits, failure, waiting: undefined }

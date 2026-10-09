@@ -96,6 +96,15 @@ describe('the band, state by state, at 60, 80 and 120 columns', () => {
     })
   }
 
+  test('a saved test keeps kane’s verdict over a later failure that has none', () => {
+    let r = run('t', 'testmd', [label('cart_add_test.md'), { k: 'mdStepStart', index: 1, heading: 'Add an iPod to the cart', at: T0 }])
+    r = fold(r, { k: 'runEnd', status: 'failed', why: 'The Edit cart button is gone; the drawer shows View Cart', category: 'locator_rot', at: T0 + 5000 })
+    r = fold(r, { k: 'runEnd', status: 'failed', why: 'No start URL provided. Pass --url', at: T0 + 6000 })
+    r = fold(r, { k: 'mdDone', status: 'failed', at: T0 + 6000 })
+    expect(r.failure?.why).toBe('The Edit cart button is gone; the drawer shows View Cart')
+    expect(r.failure?.category).toBe('locator_rot')
+  })
+
   test('a run refused before any step shows kane’s reason', () => {
     const r = run('u', 'run', [label('Type a postcode'), { k: 'runEnd', status: 'failed', why: 'No start URL provided. Pass --url', at: T0 + 1000 }])
     expect(rows([r])[1]).toContain('✗ Type a postcode failed: No start URL provided')
