@@ -19,7 +19,7 @@ A Claude Code mod that shows what kane-cli (KaneAI) is doing, without being aske
 | After Claude changes code | `offer` | `offer`: the band offers a test. `auto`: Claude is held once at the end of its turn to test the change. `off`: nothing |
 | kane-cli command | `kane-cli` | Used only for `kane-cli cover gaps --json` (read-only, no credits) |
 
-`/kane auto`, `/kane ask`, `/kane off` change it for this session. `/kane assurance` opens the Assurance tab.
+`/kane auto`, `/kane ask`, `/kane off` change it for this session. Colours follow Claude Code's theme (the design's palette on dark, a darker one on light), and every band row fits its width: names are cut first, then items drop from the right, `[ Open ]` stays. `/kane assurance` opens the Assurance tab.
 
 ## How it reads kane-cli
 

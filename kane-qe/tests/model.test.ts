@@ -12,6 +12,7 @@ import {
   objectiveFrom,
   parseCoverGaps,
   rowText,
+  rowWidth,
   savedTestsFor,
   tidyStep,
   isTrackedEdit,
@@ -73,7 +74,7 @@ describe('the band, state by state, at 60, 80 and 120 columns', () => {
     })
     test(`an untested change (${columns})`, () => {
       expect(rows([], { columns, change: { files: 2, mode: 'offer' } })[1]).toBe('⚠ 2 files changed, untested [Test this change]')
-      expect(rows([], { columns, change: { files: 1, mode: 'auto' } })[1]).toBe('⚠ 1 file changed, untested · Claude will test this before it finishes')
+      expect(rows([], { columns, change: { files: 1, mode: 'auto' } })[1]).toBe(columns >= 80 ? '⚠ 1 file changed, untested · Claude will test this before it finishes' : '⚠ 1 file changed, untested · Claude will test it')
     })
     test(`one test running (${columns})`, () => {
       const r = rows([one()], { columns })
@@ -100,6 +101,25 @@ describe('the band, state by state, at 60, 80 and 120 columns', () => {
     expect(rows([r])[1]).toContain('✗ Type a postcode failed: No start URL provided')
   })
 
+  test('every state fits its width: names are cut, then items drop from the right, [ Open ] stays', () => {
+    const long = 'Search for wireless noise cancelling headphones and add the cheapest one to the cart then verify the subtotal'
+    const states: [Run[], Partial<BandOptions>][] = [
+      [[run('l', 'run', [label(long), step(1, 'running', long, 2)])], {}],
+      [[suite(Array(12).fill('pending').map((x, i) => (i < 3 ? 'running' : i === 4 ? 'failed' : x)))], {}],
+      [[one(), run('b', 'run', [label(long), step(1, 'running', 'x', 2)])], {}],
+      [[run('f', 'run', [label(long), step(1, 'failed', long, 2), failedEnd(3)])], {}],
+      [[], { change: { files: 12, mode: 'auto' } }],
+      [[], { change: { files: 12, mode: 'offer' } }],
+      [[], { last: { label: `${long}_test.md`, status: 'passed', at: T0 - 9e6 } }],
+    ]
+    for (const columns of [51, 71, 111]) {
+      for (const [runs, o] of states) {
+        for (const r of band(runs, opts({ ...o, columns })).rows) expect(rowWidth(r)).toBeLessThanOrEqual(columns)
+        expect(band(runs, opts({ ...o, columns })).rows[0].button?.key).toBe('open')
+      }
+    }
+  })
+
   test('assurance: not set up, nothing run yet, unknown', () => {
     expect(rows([], { assurance: { state: 'none' } })[2]).toBe('assurance not set up [Set up now]')
     expect(rows([], { assurance: { state: 'ready', designedPct: 82, useCases: [] } })[2]).toBe('assurance ━━━━━━━━━━━━━─── 82% designed · nothing run yet')
@@ -110,6 +130,18 @@ describe('the band, state by state, at 60, 80 and 120 columns', () => {
     const r = rows([run('n', 'run', [label('login_test.md'), { k: 'newer', at: T0 }])])
     expect(r[0]).toContain('running  login')
     expect(r[1]).toBe('this kane-cli is newer than the mod')
+  })
+
+  test('a run waiting on a question says so on row 2, in the warning colour', () => {
+    const b = band([run('q', 'run', [label('login_test.md'), step(1, 'done', 'Open the sign-in page', 2), { k: 'ask', question: 'Which account should I use?', at: T0 + 3000 }])], opts())
+    expect(rowText(b.rows[1])).toBe('waiting for an answer: Which account should I use?')
+    expect((b.rows[1].items[0] as { c?: string }).c).toBe('#ffa45c')
+  })
+
+  test('a grid run replayed after the fact does not animate the mascot', () => {
+    const replayed = run('g', 'run', [{ k: 'postHoc' }, label('login_test.md'), step(1, 'running', 'Open the page', 1)])
+    expect(band([replayed], opts()).think).toBe(false)
+    expect(rows([replayed])[0]).toContain('running')
   })
 
   test('the mascot thinks only while something runs', () => {

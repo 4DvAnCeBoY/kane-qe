@@ -5,7 +5,8 @@ import type { Ev } from './adapter'
 import { RANK } from './adapter'
 import type { Assurance, Check, HistoryEntry, Kind, Run, Status, Step, UseCase } from '../types'
 
-export const C = {
+/** The design's palette, made for dark terminals. */
+const DARK = {
   purple: '#b388ff',
   lilac: '#cdb8ff',
   cyan: '#9fdcff',
@@ -17,7 +18,32 @@ export const C = {
   track: '#3a3658',
   chipRun: '#2c2350',
   chipIdle: '#1c1a2b',
-} as const
+}
+
+/** The same hues, dark enough to read on a light background. */
+const LIGHT: typeof DARK = {
+  purple: '#6a3fd1',
+  lilac: '#7d5ce0',
+  cyan: '#1f6fa8',
+  mint: '#17845a',
+  coral: '#c8323f',
+  orange: '#b85400',
+  yellow: '#9a7200',
+  dim: '#6b6789',
+  track: '#cfcbe3',
+  chipRun: '#e7defd',
+  chipIdle: '#efedf5',
+}
+
+/** The colours everything draws with; `usePalette` switches them with Claude Code's theme. */
+export const C = { ...DARK }
+
+/** Light palettes for Claude Code's light themes (`light`, `light-daltonized`, `light-ansi`); dark otherwise. */
+export function usePalette(theme: unknown): 'light' | 'dark' {
+  const light = typeof theme === 'string' && theme.startsWith('light')
+  Object.assign(C, light ? LIGHT : DARK)
+  return light ? 'light' : 'dark'
+}
 
 // ── small text helpers ───────────────────────────────────────────────────
 
@@ -252,7 +278,7 @@ export type BandOptions = {
 
 const dim = (t: string): Span => ({ t, d: true })
 const chip = (t: string, live: boolean): Span => ({ t: ` ${t} `, bg: live ? C.chipRun : C.chipIdle, c: live ? C.purple : C.dim, b: live })
-const TONE: Record<Status, string> = { passed: C.mint, failed: C.coral, running: C.cyan, pending: C.dim }
+const tone = (s: Status): string => ({ passed: C.mint, failed: C.coral, running: C.cyan, pending: C.dim })[s]
 
 /** One coloured cell per test; neighbours of one colour share a span. Past 40 tests, a proportional bar. */
 export function cells(states: readonly Status[], width = 40): Span[] {
@@ -264,7 +290,7 @@ export function cells(states: readonly Status[], width = 40): Span[] {
       const n = states.filter(x => x === s).length
       if (!n) continue
       const w = Math.max(1, Math.round((n / states.length) * width))
-      out.push({ t: (s === 'pending' ? '░' : '█').repeat(Math.min(w, width - used)), c: TONE[s] })
+      out.push({ t: (s === 'pending' ? '░' : '█').repeat(Math.min(w, width - used)), c: tone(s) })
       used += w
     }
     return out
@@ -273,8 +299,8 @@ export function cells(states: readonly Status[], width = 40): Span[] {
   for (const s of states) {
     const glyph = s === 'pending' ? '□' : '■'
     const last = out[out.length - 1]
-    if (last && last.c === TONE[s]) last.t += glyph
-    else out.push({ t: glyph, c: TONE[s] })
+    if (last && last.c === tone(s)) last.t += glyph
+    else out.push({ t: glyph, c: tone(s) })
   }
   return out
 }
@@ -337,8 +363,29 @@ function batch(runs: readonly Run[]): Run[] {
   return runs.filter(r => isLive(r.status) || (r.endedAt ?? 0) >= from)
 }
 
+const itemWidth = (i: Item): number => (Array.isArray(i) ? i.reduce((n, s) => n + [...s.t].length, 0) : [...i.t].length)
+
+/** Cells a row takes as drawn: items one cell apart, a button as `[ label ]`. */
+export function rowWidth(r: Row): number {
+  const parts = r.items.map(itemWidth).concat(r.button ? [r.button.label.length + 4] : [])
+  return parts.reduce((a, b) => a + b, 0) + Math.max(0, parts.length - 1)
+}
+
+/** Names are already cut to fit; what still does not fit is dropped from the right, the button kept. */
+export function fitRow(r: Row, room: number): Row {
+  let row = r
+  while (row.items.length > 1 && rowWidth(row) > room) row = { ...row, items: row.items.slice(0, -1) }
+  return row
+}
+
 /** The three rows above the prompt. The first state that matches wins. */
 export function band(runs: readonly Run[], o: BandOptions): Band {
+  const b = pickBand(runs, o)
+  const room = Math.max(30, o.columns)
+  return { think: b.think, rows: [fitRow(b.rows[0], room), fitRow(b.rows[1], room), fitRow(b.rows[2], room)] }
+}
+
+function pickBand(runs: readonly Run[], o: BandOptions): Band {
   const open: RowButton = { key: 'open', label: 'Open', act: 'open' }
   const room = Math.max(30, o.columns)
   const live = runs.filter(r => isLive(r.status))
@@ -394,7 +441,11 @@ export function band(runs: readonly Run[], o: BandOptions): Band {
   if (c.failed) first.push({ t: `✗ ${c.failed} failed`, c: C.coral })
   let second: Row = { items: [] }
   const failed = newestFailed(all)
-  if (o.change && o.change.mode === 'auto') second = { items: [{ t: `⚠ ${files(o.change.files)} changed, untested`, c: C.orange }, dim('· Claude will test this before it finishes')] }
+  if (o.change && o.change.mode === 'auto') {
+    const warn = `⚠ ${files(o.change.files)} changed, untested`
+    // Too narrow for the whole note: its short form, rather than nothing.
+    second = { items: [{ t: warn, c: C.orange }, dim(warn.length + 44 <= room ? '· Claude will test this before it finishes' : '· Claude will test it')] }
+  }
   else if (o.change) second = { items: [{ t: `⚠ ${files(o.change.files)} changed, untested`, c: C.orange }], button: { key: 'test', label: 'Test this change', act: 'offer' } }
   else if (failed) second = failRow(failed, room)
   else if (all.length === 0 && o.last) second = { items: [dim('last run'), o.last.status === 'passed' ? { t: '✓', c: C.mint } : { t: '✗', c: C.coral }, dim(`${cut(nm(o.last), 30)} · ${ago(o.now - o.last.at)}`)] }

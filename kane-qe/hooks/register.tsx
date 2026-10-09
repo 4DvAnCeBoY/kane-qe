@@ -35,6 +35,7 @@ import {
   startUrl,
   summary,
   tally,
+  usePalette,
 } from './model'
 import type { Item, Row, Span } from './model'
 import { MAX_READ, afterBytes, inside, parsePointer, utf8Len } from './sources'
@@ -55,7 +56,10 @@ type Kit = Pick<Elements['mobile'], 'Box' | 'Text' | 'Button'>
 type Table = Elements[RenderSurface]
 type Press = (action: string) => void
 
-const GLYPH: Record<Status, [string, string]> = { running: ['◉', C.cyan], passed: ['✓', C.mint], failed: ['✗', C.coral], pending: ['○', C.dim] }
+function glyphOf(s: Status): [string, string] {
+  const all: Record<Status, [string, string]> = { running: ['◉', C.cyan], passed: ['✓', C.mint], failed: ['✗', C.coral], pending: ['○', C.dim] }
+  return all[s]
+}
 
 // ── module state: it starts over on a reload; what must last is in `$.state` / `$.store` ──
 
@@ -110,7 +114,7 @@ function mascot(table: Table, surface: RenderSurface, think: boolean, n: number)
   return <table.Text color={C.purple}>kane</table.Text>
 }
 
-const glyph = (ui: Kit, s: Status) => <ui.Text color={GLYPH[s][1]}>{GLYPH[s][0]}</ui.Text>
+const glyph = (ui: Kit, s: Status) => <ui.Text color={glyphOf(s)[1]}>{glyphOf(s)[0]}</ui.Text>
 
 /** A label and its text side by side, so a wrapped text keeps its column. */
 function fact(ui: Kit, label: string, value: string, color?: string) {
@@ -540,6 +544,12 @@ async function recent($: EngineInterface): Promise<Record<string, HistoryEntry[]
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, HistoryEntry[]>) : {}
 }
 
+async function readTheme($: EngineInterface) {
+  const row = (await $.config.list()).find(r => r.key === 'theme')
+  usePalette(row?.value)
+  await update($, tickAtom, n => n + 1)
+}
+
 async function loadLast($: EngineInterface) {
   const all = await recent($)
   const last = all[projectDir]?.[0]
@@ -691,7 +701,16 @@ export const register: Register = (on, options) => {
     $.clock.every(STEP_MS, () => void pulse($).catch(() => undefined))
     void loadLast($).catch(() => undefined)
     void refreshAssurance($).catch(() => undefined)
+    void readTheme($).catch(() => undefined)
     return started
+  })
+
+  // The palette follows Claude Code's theme: the design's colours are for dark backgrounds.
+  on('config.set', { key: 'theme' }, async ($, e, next) => {
+    const result = await next(e)
+    usePalette(e.value)
+    await update($, tickAtom, n => n + 1)
+    return result
   })
 
   on('command.run', { command: 'kane' }, async ($, e) => {

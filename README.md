@@ -65,6 +65,8 @@ Nothing to start. Open Claude Code in a project and the band is there. Everythin
 | `/kane assurance` | Open the Assurance tab |
 | `/kane auto` · `/kane ask` · `/kane off` | What happens after Claude changes code, for this session |
 
+The colours follow Claude Code's theme: the design's palette on dark themes, a darker version of it on light ones.
+
 `/config` → kane-qe: **After Claude changes code** (`offer` by default, `auto`, `off`) and **kane-cli command** (default `kane-cli`; used only for the read-only `cover gaps`).
 
 ## What it reads, and what it never does

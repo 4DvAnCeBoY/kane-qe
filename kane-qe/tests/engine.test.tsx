@@ -91,6 +91,21 @@ describe('drawing', () => {
     }
   })
 
+  test('colours follow Claude Code’s theme: the design’s palette on dark, a darker one on light', async ($, on) => {
+    const w = world(on)
+    on('config.list', () => ({ value: [{ key: 'theme', value: 'light' }] }) as never)
+    on('config.set', ($, e) => ({ value: (e as { value: unknown }).value }) as never)
+    await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)
+    await w.clock.settle()
+    const band = await $.ui.mount({ ...BAND, surface: 'terminal' } as never)
+    const assurance = async () => (await band.find({ type: 'Text', text: /^assurance$/ }))?.props.color
+    expect(await assurance()).toBe('#9a7200')
+    await $.config.set({ key: 'theme', value: 'dark' } as never)
+    await w.clock.settle()
+    expect(await assurance()).toBe('#ffd66b')
+    await band.unmount()
+  })
+
   test('the pane has Runs and Assurance; with no assurance it offers to set it up with Claude', async ($, on) => {
     const w = world(on)
     await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)
