@@ -625,6 +625,45 @@ function autoInstruction(files: readonly string[], saved: readonly string[]): st
   return `kane-qe: you changed ${rel.join(', ')} and no kane-cli run has tested it yet. Before you finish, test the change in a browser with kane-cli (kane-cli run "<what a user does and what must be true>" --agent --headless).${reuse} Then report the result.`
 }
 
+/** A kane-cli command Claude is about to run names the run it starts. */
+async function beforeTool($: EngineInterface, e: { tool: string; command?: unknown }) {
+  if (e.tool !== 'Bash') return
+  const named = labelFromCommand(String(e.command ?? ''))
+  if (!named) return
+  commands.push({ ...named, at: await $.clock.now(), used: false })
+  if (commands.length > 20) commands.shift()
+}
+
+/** Files Claude changed, by the edit tools or from the shell (the Bash result lists what it changed). */
+async function afterTool($: EngineInterface, e: { tool: string }, result: { deny?: unknown; isError?: unknown; result?: unknown }) {
+  if (result.deny || result.isError) return
+  if (e.tool === 'Edit' || e.tool === 'Write' || e.tool === 'NotebookEdit') {
+    const input = e as unknown as { file_path?: unknown; notebook_path?: unknown }
+    await noteEdit($, String(input.file_path ?? input.notebook_path ?? ''))
+  }
+  if (e.tool === 'Bash') for (const path of bashChanges(result.result)) await noteEdit($, path)
+}
+
+/** At the end of a turn: the reason to hold Claude (auto mode), or nothing; in offer mode the band's warning shows. */
+async function holdForChange($: EngineInterface, e: { stop_hook_active?: boolean }): Promise<string | undefined> {
+  const change = await read($, changeAtom)
+  const mode = modeOf(await read($, modeAtom))
+  if (!change || mode === 'off') return undefined
+  if (mode === 'offer') {
+    if (!change.shown) await update($, changeAtom, c => (c ? { ...c, shown: true } : c))
+    return undefined
+  }
+  if (e.stop_hook_active || heldFor === change.lastAt) return undefined
+  heldFor = change.lastAt
+  const saved = savedTestsFor(change.files, await savedTests($).catch(() => []))
+  return autoInstruction(change.files, saved)
+}
+
+async function themeChanged($: EngineInterface, theme: unknown) {
+  usePalette(theme)
+  await update($, tickAtom, n => n + 1)
+}
+
 // ── actions ──────────────────────────────────────────────────────────────
 
 async function act($: EngineInterface, a: string) {
@@ -708,11 +747,7 @@ export const register: Register = (on, options) => {
   // The palette follows Claude Code's theme: the design's colours are for dark backgrounds.
   on('config.set', { key: 'theme' }, async ($, e, next) => {
     const result = await next(e)
-    // The person's theme change must never fail because of this redraw.
-    if (!result.deny) {
-      usePalette(e.value)
-      await update($, tickAtom, n => n + 1).catch(() => undefined)
-    }
+    if (!result.deny) await themeChanged($, e.value).catch(() => undefined)
     return result
   })
 
@@ -735,42 +770,20 @@ export const register: Register = (on, options) => {
     return { text: 'Kane: /kane opens the pane · /kane assurance · /kane auto | ask | off sets what happens after Claude changes code.' }
   })
 
+  // These three sit in the path of what the person and Claude do: the mod's own work is caught, the action always goes on.
   on('tool.call', async ($, e, next) => {
-    const now = await $.clock.now().catch(() => 0)
-    if (e.tool === 'Bash') {
-      const named = labelFromCommand(String(e.command ?? ''))
-      if (named) {
-        commands.push({ ...named, at: now, used: false })
-        if (commands.length > 20) commands.shift()
-      }
-    }
+    await beforeTool($, e).catch(() => undefined)
     const result = await next(e)
-    const ok = !('deny' in result && result.deny) && !result.isError
-    if (ok && (e.tool === 'Edit' || e.tool === 'Write' || e.tool === 'NotebookEdit')) {
-      const input = e as unknown as { file_path?: unknown; notebook_path?: unknown }
-      void noteEdit($, String(input.file_path ?? input.notebook_path ?? '')).catch(() => undefined)
-    }
-    // Claude also changes code from the shell (sed, printf > file): the Bash result lists what it changed.
-    if (ok && e.tool === 'Bash') {
-      for (const path of bashChanges((result as { result?: unknown }).result)) void noteEdit($, path).catch(() => undefined)
-    }
+    await afterTool($, e, result).catch(() => undefined)
     return result
   })
 
   // The turn is ending: an untested change is offered (offer), or Claude is held once to test it (auto).
   on('classic.Stop', async ($, e, next) => {
     const result = await next(e)
-    const change = await read($, changeAtom)
-    const mode = modeOf(await read($, modeAtom))
-    if (!change || mode === 'off' || result.block) return result
-    if (mode === 'offer') {
-      if (!change.shown) await update($, changeAtom, c => (c ? { ...c, shown: true } : c))
-      return result
-    }
-    if ((e as { stop_hook_active?: boolean }).stop_hook_active || heldFor === change.lastAt) return result
-    heldFor = change.lastAt
-    const saved = savedTestsFor(change.files, await savedTests($).catch(() => []))
-    return { ...result, block: autoInstruction(change.files, saved) }
+    if (result.block) return result
+    const block = await holdForChange($, e).catch(() => undefined)
+    return block ? { ...result, block } : result
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
