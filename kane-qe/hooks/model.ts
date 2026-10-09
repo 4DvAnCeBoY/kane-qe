@@ -292,7 +292,7 @@ export function assuranceRow(a: Assurance): Row {
   if (a.state === 'none') return { items: [head, dim('not set up')], button: { key: 'setup', label: 'Set up now', act: 'tab:assure' } }
   if (a.state === 'unknown') return { items: [head] }
   const cases = `${a.useCases.length} use case${a.useCases.length === 1 ? '' : 's'}`
-  if (a.provenPct === undefined) return { items: [head, bar(16, a.designedPct / 100, C.yellow), { t: `${a.designedPct}%`, c: C.yellow, b: true }, dim(`designed · nothing run yet · ${cases}`)] }
+  if (a.provenPct === undefined) return { items: [head, bar(16, a.designedPct / 100, C.yellow), { t: `${a.designedPct}%`, c: C.yellow, b: true }, dim('designed · nothing run yet')] }
   return { items: [head, bar(16, a.provenPct / 100, C.yellow), { t: `${a.provenPct}%`, c: C.yellow, b: true }, dim(`proven · ${cases}`)] }
 }
 

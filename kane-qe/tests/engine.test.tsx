@@ -23,13 +23,13 @@ const PANE = {
   props: { title: 'Kane', isFocused: false, bodyColumns: 56, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
 } as const
 
-type World = { files: Record<string, string>; alive: Set<number>; prompts: string[]; cover?: string; forkText?: string; ignored: Set<string> }
+type World = { files: Record<string, string>; alive: Set<number>; prompts: string[]; cover?: string; forkText?: string; ignored: Set<string>; bashResult?: unknown; store?: Record<string, unknown> }
 
 /** The engine beneath the plugin: a fake disk, processes, and the calls the mod makes. */
 function world(on: On, w: Partial<World> = {}): World & { clock: ReturnType<typeof mock.clock> } {
   const state: World = { files: {}, alive: new Set(), prompts: [], ignored: new Set(), ...w }
   const clock = mock.clock(on, { now: T0 })
-  mock.store(on)
+  mock.store(on, state.store)
   mock.env(on, { HOME })
   on('session.start', ($, e) => ({ cwd: e.cwd }) as never)
   on('command.register', ($, e) => ({ value: { command: e.name } }) as never)
@@ -56,7 +56,7 @@ function world(on: On, w: Partial<World> = {}): World & { clock: ReturnType<type
     if (argv.includes('cover')) return (state.cover ? OK(state.cover) : OK('error: no context store here', 1)) as never
     return OK('', 1) as never
   })
-  on('tool.call', () => ({ result: { ok: true } }) as never)
+  on('tool.call', ($, e) => ({ result: (e as { tool?: string }).tool === 'Bash' && state.bashResult ? state.bashResult : { ok: true } }) as never)
   on('classic.Stop', () => ({}) as never)
   return Object.assign(state, { clock })
 }
@@ -149,7 +149,7 @@ describe('watching kane-cli', () => {
     expect(await pane.find({ type: 'Text', text: /✗ the page shows/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: /31.2 credits/ })).toBeDefined()
     await pane.press({ key: 'evidence' })
-    expect(w.prompts.at(-1)).toContain(`Open the evidence for the kane-cli run in ${dir}`)
+    expect(w.prompts.at(-1)).toBe(`Open the evidence for the kane-cli run in ${dir}.`)
     await pane.unmount()
     await band.unmount()
   })
@@ -211,6 +211,16 @@ describe('watching kane-cli', () => {
     await band.unmount()
   })
 
+  test('the last result from an earlier session shows, beside v1’s own history in the same store', async ($, on) => {
+    // v1 of this plugin keeps a list under `history` in the same store; v2 keeps its own record.
+    const w = world(on, { store: { history: [{ id: 'v1-run', status: 'passed' }], recentByProject: { [PROJECT]: [{ label: 'login_test.md', status: 'passed', at: T0 - 7_200_000 }] } } })
+    await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)
+    await w.clock.settle()
+    const band = await $.ui.mount({ ...BAND, surface: 'terminal' } as never)
+    expect(await band.find({ type: 'Text', text: /login · 2h ago/ })).toBeDefined()
+    await band.unmount()
+  })
+
   test('a stream with unknown events or a newer wire version never throws', async ($, on) => {
     const w = world(on)
     await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)
@@ -242,8 +252,13 @@ describe('after Claude changes code', () => {
     await band.press({ key: 'test' })
     await w.clock.settle()
     const pane = await $.ui.mount({ ...PANE, surface: 'terminal' } as never)
-    expect(await pane.find({ type: 'Text', text: /Type a postcode with a space/ })).toBeDefined()
+    // A saved test covers it: offered first, no draft until asked.
     expect(await pane.find({ type: 'Text', text: /checkout_guest_test.md/ })).toBeDefined()
+    expect(await pane.find({ key: 'saved-run-checkout_guest_test.md' })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /Suggested objective/ })).toBeUndefined()
+    await pane.press({ key: 'offer-draft' })
+    await w.clock.settle()
+    expect(await pane.find({ type: 'Text', text: /Type a postcode with a space/ })).toBeDefined()
     await pane.press({ key: 'offer-run' })
     expect(w.prompts.at(-1)).toContain('kane-cli run "Type a postcode with a space and check the order is placed." --url https://shop.test/ --agent --headless')
 
@@ -256,6 +271,17 @@ describe('after Claude changes code', () => {
     expect(await band.find({ type: 'Text', text: /changed, untested/ })).toBeUndefined()
     expect(await band.find({ type: 'Text', text: /✓ 1 passed/ })).toBeDefined()
     await pane.unmount()
+    await band.unmount()
+  })
+
+  test('an edit made from the shell counts too: Bash reports the files it changed', async ($, on) => {
+    const w = world(on, { bashResult: { stdout: '', bashEditDiff: { files: [], moreFiles: 0, changedFiles: [`${PROJECT}/src/cart.ts`] } } })
+    await $.session.start({ cwd: PROJECT, surface: 'terminal', isInteractive: true } as never)
+    await $.tool.call({ tool: 'Bash', command: "printf 'x' > src/cart.ts" } as never)
+    await w.clock.settle()
+    await $.classic.Stop({ stop_hook_active: false, last_assistant_message: 'done' } as never)
+    const band = await $.ui.mount({ ...BAND, surface: 'terminal' } as never)
+    expect(await band.find({ type: 'Text', text: /1 file changed, untested/ })).toBeDefined()
     await band.unmount()
   })
 

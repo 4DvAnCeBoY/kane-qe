@@ -38,6 +38,8 @@ export type Run = {
   newer?: boolean
   /** Replayed after the fact (remote grid): not animated. */
   postHoc?: boolean
+  /** Lines of its stream that were not JSON: skipped, and counted. */
+  skipped?: number
   /** Where the label came from; a better source replaces a weaker one. */
   labelRank?: number
 }
@@ -63,7 +65,7 @@ export type AfterChange = 'offer' | 'auto' | 'off'
 export type Change = { files: string[]; firstAt: number; lastAt: number; shown: boolean }
 
 /** `url`: the app's start page, as the project's saved tests name it. */
-export type Offer = { files: string[]; objective?: string; drafting: boolean; note?: string; saved: string[]; url?: string }
+export type Offer = { files: string[]; objective?: string; drafting: boolean; note?: string; saved: string[]; url?: string; last?: Record<string, HistoryEntry> }
 
 export type View = {
   tab: 'runs' | 'assure'

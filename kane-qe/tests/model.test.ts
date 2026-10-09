@@ -102,7 +102,7 @@ describe('the band, state by state, at 60, 80 and 120 columns', () => {
 
   test('assurance: not set up, nothing run yet, unknown', () => {
     expect(rows([], { assurance: { state: 'none' } })[2]).toBe('assurance not set up [Set up now]')
-    expect(rows([], { assurance: { state: 'ready', designedPct: 82, useCases: [] } })[2]).toContain('82% designed · nothing run yet · 0 use cases')
+    expect(rows([], { assurance: { state: 'ready', designedPct: 82, useCases: [] } })[2]).toBe('assurance ━━━━━━━━━━━━━─── 82% designed · nothing run yet')
     expect(rows([], { assurance: { state: 'unknown' } })[2]).toBe('assurance')
   })
 

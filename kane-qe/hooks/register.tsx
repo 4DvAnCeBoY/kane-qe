@@ -64,7 +64,7 @@ let kane: string[] = ['kane-cli']
 let projectDir = ''
 let activeDir = ''
 /** One per file being followed: a run's own stream, or a suite member's. */
-type Watch = { id: string; path: string; pointer?: string; pid?: number; bytes: number; rest: string; done: boolean; member?: string; parent?: string }
+type Watch = { id: string; path: string; pointer?: string; pid?: number; bytes: number; rest: string; done: boolean; member?: string; parent?: string; closing?: boolean }
 const watches = new Map<string, Watch>()
 const seenPointers = new Set<string>()
 /** kane-cli commands Claude ran, to name the runs they start. */
@@ -159,6 +159,8 @@ function memberRow(ui: Kit, press: Press, r: Run, now: number, width: number) {
 }
 
 const sortRuns = (list: readonly Run[]) => [...list].sort((a, b) => ORDER[a.status] - ORDER[b.status] || b.startedAt - a.startedAt)
+/** A suite's tests by state, each state in the plan's order. */
+const sortMembers = (list: readonly Run[]) => list.map((m, i) => ({ m, i })).sort((a, b) => ORDER[a.m.status] - ORDER[b.m.status] || a.i - b.i).map(x => x.m)
 
 function suiteView(ui: Kit, press: Press, s: Run, now: number, width: number, back: boolean) {
   const c = tally(s.members ?? [])
@@ -170,7 +172,7 @@ function suiteView(ui: Kit, press: Press, s: Run, now: number, width: number, ba
       </ui.Box>
       <ui.Text dimColor>{c.total ? `${c.passed + c.failed} of ${c.total} done · ${c.running} running · ${c.pending} waiting` : 'planning the suite'}</ui.Text>
       <ui.Text> </ui.Text>
-      {sortRuns(s.members ?? []).map(m => memberRow(ui, press, m, now, width))}
+      {sortMembers(s.members ?? []).map(m => memberRow(ui, press, m, now, width))}
     </ui.Box>
   )
 }
@@ -215,6 +217,7 @@ function runDetail(ui: Kit, press: Press, r: Run, now: number, width: number) {
       </ui.Box>
       {r.newer ? <ui.Text dimColor>this kane-cli is newer than the mod: step detail is not read</ui.Text> : null}
       {r.waiting ? fact(ui, 'asks', r.waiting, C.orange) : null}
+      {r.skipped ? <ui.Text dimColor>{`${r.skipped} line${r.skipped === 1 ? '' : 's'} of its stream could not be read and ${r.skipped === 1 ? 'was' : 'were'} skipped`}</ui.Text> : null}
       <ui.Text> </ui.Text>
       {r.status === 'failed' && r.failure?.why ? fact(ui, 'why', r.failure.why) : null}
       {r.status === 'failed' && kind ? fact(ui, 'kind', kind) : null}
@@ -250,8 +253,10 @@ function runDetail(ui: Kit, press: Press, r: Run, now: number, width: number) {
   )
 }
 
-function offerView(ui: Kit, press: Press, o: Offer | null, change: Change | null) {
+function offerView(ui: Kit, press: Press, o: Offer | null, change: Change | null, now: number) {
   const files = o?.files ?? change?.files ?? []
+  const saved = o?.saved ?? []
+  const hasDraft = !!(o && (o.drafting || o.objective || o.note))
   return (
     <ui.Box flexDirection="column">
       <ui.Box flexDirection="row" gap={1}>
@@ -263,23 +268,33 @@ function offerView(ui: Kit, press: Press, o: Offer | null, change: Change | null
       {files.slice(0, 8).map((f, i) => fact(ui, i === 0 ? 'changed' : '', f.startsWith(`${projectDir}/`) ? f.slice(projectDir.length + 1) : f))}
       {files.length > 8 ? <ui.Text dimColor>{`        +${files.length - 8} more`}</ui.Text> : null}
       <ui.Text> </ui.Text>
-      {o && o.saved.length ? (
+      {hasDraft ? (
         <ui.Box flexDirection="column">
-          <ui.Text bold>Saved tests that touch this</ui.Text>
-          {o.saved.slice(0, 4).map(t => (
-            <ui.Box key={`saved-${t}`} flexDirection="row" gap={1}>
-              <ui.Text>{t}</ui.Text>
-              <ui.Button key={`saved-run-${t}`} label="Run it" onPress={() => press(`saved:${t}`)} />
-            </ui.Box>
-          ))}
+          <ui.Text bold>Suggested objective</ui.Text>
+          {o?.drafting ? <ui.Text dimColor>Claude is drafting one…</ui.Text> : o?.objective ? <ui.Text>{o.objective}</ui.Text> : <ui.Text dimColor>{o?.note ?? ''}</ui.Text>}
           <ui.Text> </ui.Text>
         </ui.Box>
       ) : null}
-      <ui.Text bold>Suggested objective</ui.Text>
-      {o?.drafting ? <ui.Text dimColor>Claude is drafting one…</ui.Text> : o?.objective ? <ui.Text>{o.objective}</ui.Text> : <ui.Text dimColor>{o?.note ?? 'No draft yet.'}</ui.Text>}
-      <ui.Text> </ui.Text>
+      {saved.length ? (
+        <ui.Box flexDirection="column">
+          <ui.Text bold>Saved tests that touch this</ui.Text>
+          {saved.slice(0, 4).map(t => {
+            const last = o?.last?.[t]
+            return (
+              <ui.Box key={`saved-${t}`} flexDirection="row" gap={1}>
+                <ui.Box flexShrink={1}>
+                  <ui.Text dimColor>{last ? `${t} · last ${last.status === 'passed' ? '✓' : '✗'} ${ago(now - last.at)}` : t}</ui.Text>
+                </ui.Box>
+                <ui.Button key={`saved-run-${t}`} label="Run it" onPress={() => press(`saved:${t}`)} />
+              </ui.Box>
+            )
+          })}
+          <ui.Text> </ui.Text>
+        </ui.Box>
+      ) : null}
       <ui.Box flexDirection="row" gap={1}>
         {o?.objective ? <ui.Button key="offer-run" label="Run the objective" variant="primary" onPress={() => press('offer-run')} /> : null}
+        {!hasDraft ? <ui.Button key="offer-draft" label="Draft a new objective" onPress={() => press('offer-draft')} /> : null}
         <ui.Button key="offer-skip" label="Not now" onPress={() => press('offer-skip')} />
       </ui.Box>
     </ui.Box>
@@ -390,16 +405,23 @@ function applyLines(runs: Run[], w: Watch, lines: readonly string[], now: number
   if (i === -1) return { runs, ended }
   let next = [...runs]
   for (const l of lines) {
-    for (const ev of adapt(l, now).events) {
+    const a = adapt(l, now)
+    if (a.bad) {
+      const at = next.findIndex(r => r.id === id)
+      if (at >= 0 && !w.member) next[at] = { ...next[at]!, skipped: (next[at]!.skipped ?? 0) + 1 }
+    }
+    for (const ev of a.events) {
       const before = next[i]!
       const after = w.member ? foldMember(before, w.member, ev) : fold(before, ev)
       next[i] = after
       if (!w.member && ev.k === 'memberStart' && ev.logPath && !watches.has(ev.logPath)) {
         watches.set(ev.logPath, { id: ev.logPath, path: ev.logPath, bytes: 0, rest: '', done: false, member: ev.path, parent: id })
       }
+      // A member that ended is read once more (its last lines may hold the failure), then left.
       if (!w.member && ev.k === 'memberEnd' && ev.logPath) {
         const m = watches.get(ev.logPath)
-        if (m) m.done = true
+        if (m) m.closing = true
+        else watches.set(ev.logPath, { id: ev.logPath, path: ev.logPath, bytes: 0, rest: '', done: false, member: ev.path, parent: id, closing: true })
       }
       if (terminal(before, ev)) {
         w.done = true
@@ -447,6 +469,7 @@ async function poll($: EngineInterface) {
         ended.push(...r.ended)
         changed = true
       }
+      if (w.closing) w.done = true
       // A killed kane-cli leaves no terminal line: once its pointer is gone and its pid with it, the run is over.
       if (!w.done && !w.member && w.pointer && !present.has(w.pointer) && !(await alive($, w.pid))) {
         w.done = true
@@ -481,9 +504,9 @@ async function finished($: EngineInterface, r: Run) {
   if (r.status !== 'passed' && r.status !== 'failed') return
   const entry: HistoryEntry = { label: r.label, status: r.status, at: r.endedAt ?? r.startedAt, where: r.failure?.where }
   await update($, lastAtom, () => entry)
-  const all = ((await $.store.get('history').catch(() => undefined)) ?? {}) as Record<string, HistoryEntry[]>
+  const all = await recent($)
   all[projectDir] = [entry, ...(all[projectDir] ?? [])].slice(0, 10)
-  await $.store.set('history', all).catch(() => undefined)
+  await $.store.set(RECENT, all).catch(() => undefined)
   const change = await read($, changeAtom)
   if (change && r.startedAt > change.lastAt) {
     await update($, changeAtom, () => null)
@@ -509,8 +532,16 @@ async function refreshAssurance($: EngineInterface) {
   if (a.state === 'ready') await update($, assuranceAtom, () => a)
 }
 
+/** The last results per project. Its own key: v1 of this plugin kept a list under `history` in the same store. */
+const RECENT = 'recentByProject'
+
+async function recent($: EngineInterface): Promise<Record<string, HistoryEntry[]>> {
+  const v = await $.store.get(RECENT).catch(() => undefined)
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, HistoryEntry[]>) : {}
+}
+
 async function loadLast($: EngineInterface) {
-  const all = ((await $.store.get('history').catch(() => undefined)) ?? {}) as Record<string, HistoryEntry[]>
+  const all = await recent($)
   const last = all[projectDir]?.[0]
   if (last) await update($, lastAtom, () => last)
 }
@@ -526,6 +557,14 @@ async function noteEdit($: EngineInterface, path: string) {
   if (!path || !inside(path, projectDir) || !isTrackedEdit(path.slice(projectDir.length + 1)) || (await ignored($, path))) return
   const now = await $.clock.now()
   await update($, changeAtom, c => (c ? { ...c, files: c.files.includes(path) ? c.files : [...c.files, path], lastAt: now } : { files: [path], firstAt: now, lastAt: now, shown: false }))
+}
+
+/** The files a Bash command changed, as Claude Code reports them beside its output. */
+function bashChanges(result: unknown): string[] {
+  const diff = (result as { bashEditDiff?: { changedFiles?: unknown; files?: unknown } } | undefined)?.bashEditDiff
+  if (!diff) return []
+  if (Array.isArray(diff.changedFiles)) return diff.changedFiles.filter((f): f is string => typeof f === 'string')
+  return Array.isArray(diff.files) ? diff.files.map(f => (f as { filePath?: unknown }).filePath).filter((f): f is string => typeof f === 'string') : []
 }
 
 async function savedTests($: EngineInterface): Promise<{ name: string; text: string }[]> {
@@ -546,13 +585,28 @@ async function openOffer($: EngineInterface) {
   await openPane($)
   const tests = await savedTests($)
   const saved = savedTestsFor(files, tests)
-  await update($, offerAtom, () => ({ files, drafting: true, saved, url: startUrl(tests) }))
-  const rel = files.map(f => (f.startsWith(`${projectDir}/`) ? f.slice(projectDir.length + 1) : f))
+  const history = (await recent($))[projectDir] ?? []
+  const last: Record<string, HistoryEntry> = {}
+  for (const name of saved) {
+    const hit = history.find(h => h.label === name || h.label.endsWith(`/${name}`))
+    if (hit) last[name] = hit
+  }
+  await update($, offerAtom, () => ({ files, drafting: false, saved, url: startUrl(tests), last }))
+  // A saved test that covers the change comes first; Claude drafts a new objective only when none does.
+  if (saved.length === 0) await draftObjective($)
+}
+
+/** Claude writes the objective from the changed paths and their diff. */
+async function draftObjective($: EngineInterface) {
+  const o = await read($, offerAtom)
+  if (!o) return
+  await update($, offerAtom, x => (x ? { ...x, drafting: true, note: undefined } : x))
+  const rel = o.files.map(f => (f.startsWith(`${projectDir}/`) ? f.slice(projectDir.length + 1) : f))
   const d = await $.process.run(['git', 'diff', '--', ...rel], { cwd: projectDir, timeoutMs: 10_000 }).catch(() => undefined)
   const diff = (d?.stdout ?? '').slice(0, 8000)
   const reply = await $.model.fork({ prompt: draftPrompt(rel, diff) }).catch(() => undefined)
   const objective = reply?.isAnswered ? objectiveFrom(reply.text) : ''
-  await update($, offerAtom, o => (o ? { ...o, drafting: false, objective: objective || undefined, note: objective ? undefined : `No draft: ${reply && !reply.isAnswered ? reply.reason : 'Claude did not answer'}.` } : o))
+  await update($, offerAtom, x => (x ? { ...x, drafting: false, objective: objective || undefined, note: objective ? undefined : `No draft: ${reply && !reply.isAnswered ? reply.reason : 'Claude did not answer'}.` } : x))
 }
 
 function autoInstruction(files: readonly string[], saved: readonly string[]): string {
@@ -574,6 +628,7 @@ async function act($: EngineInterface, a: string) {
   } else if (k === 'run') await update($, viewAtom, v => ({ ...v, open: arg, tab: 'runs' as const }))
   else if (k === 'back') await update($, viewAtom, v => ({ ...v, open: '' }))
   else if (k === 'offer') await openOffer($)
+  else if (k === 'offer-draft') await draftObjective($)
   else if (k === 'offer-run') {
     const o = await read($, offerAtom)
     if (!o?.objective) return
@@ -593,7 +648,7 @@ async function act($: EngineInterface, a: string) {
   } else if (k === 'evidence') {
     const r = leaves(await read($, runsAtom)).concat(await read($, runsAtom)).find(x => x.id === arg)
     const dir = r?.sessionDir || arg
-    void $.prompt.submit({ text: `Open the evidence for the kane-cli run in ${dir}: serve its evidence pack (kane-cli evidence serve <pack> under ${dir}/evidence) and give me the viewer link.` }).catch(() => undefined)
+    void $.prompt.submit({ text: `Open the evidence for the kane-cli run in ${dir}.` }).catch(() => undefined)
   } else if (k === 'setup') {
     void $.prompt.submit({
       text: 'Set up kane-cli assurance for this project: ask me for the requirement (a PRD file, a Jira, Confluence or Linear link, or a web page), ingest it with kane-cli, extract the use cases and design tests (use --mode agent), then show me the coverage with kane-cli cover gaps.',
@@ -673,6 +728,10 @@ export const register: Register = (on, options) => {
       const input = e as unknown as { file_path?: unknown; notebook_path?: unknown }
       void noteEdit($, String(input.file_path ?? input.notebook_path ?? '')).catch(() => undefined)
     }
+    // Claude also changes code from the shell (sed, printf > file): the Bash result lists what it changed.
+    if (ok && e.tool === 'Bash') {
+      for (const path of bashChanges((result as { result?: unknown }).result)) void noteEdit($, path).catch(() => undefined)
+    }
     return result
   })
 
@@ -730,7 +789,7 @@ export const register: Register = (on, options) => {
     const opened = all.find(r => r.id === v.open) ?? runs.find(r => r.id === v.open)
     let body
     if (v.tab === 'assure') body = assureView(ui, press, await read($, assuranceAtom), now)
-    else if (v.open === 'offer') body = offerView(ui, press, await read($, offerAtom), await read($, changeAtom))
+    else if (v.open === 'offer') body = offerView(ui, press, await read($, offerAtom), await read($, changeAtom), now)
     else if (opened?.kind === 'testrun' && opened.members) body = suiteView(ui, press, opened, now, width, true)
     else if (opened) body = runDetail(ui, press, opened, now, width)
     else body = runsView(ui, press, runs, now, width, await read($, lastAtom))
