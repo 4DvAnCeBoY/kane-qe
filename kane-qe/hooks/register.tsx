@@ -708,8 +708,11 @@ export const register: Register = (on, options) => {
   // The palette follows Claude Code's theme: the design's colours are for dark backgrounds.
   on('config.set', { key: 'theme' }, async ($, e, next) => {
     const result = await next(e)
-    usePalette(e.value)
-    await update($, tickAtom, n => n + 1)
+    // The person's theme change must never fail because of this redraw.
+    if (!result.deny) {
+      usePalette(e.value)
+      await update($, tickAtom, n => n + 1).catch(() => undefined)
+    }
     return result
   })
 
