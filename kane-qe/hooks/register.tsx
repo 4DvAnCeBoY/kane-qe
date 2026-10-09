@@ -53,7 +53,7 @@ const lastAtom = atom({ plugin: 'kane-qe', key: 'last' } as const, null as Histo
 
 type Kit = Pick<Elements['mobile'], 'Box' | 'Text' | 'Button'>
 type Table = Elements[RenderSurface]
-type Press = (act: string) => void
+type Press = (action: string) => void
 
 const GLYPH: Record<Status, [string, string]> = { running: ['◉', C.cyan], passed: ['✓', C.mint], failed: ['✗', C.coral], pending: ['○', C.dim] }
 
@@ -199,8 +199,8 @@ function stepTime(s: Step, now: number): string {
 
 function runDetail(ui: Kit, press: Press, r: Run, now: number, width: number) {
   const tone = r.status === 'failed' ? C.coral : r.status === 'passed' ? C.mint : C.purple
-  const finished = r.status === 'passed' || r.status === 'failed'
-  const status = [fmt(elapsed(r, now)), r.kind, r.target, finished && r.credits !== undefined ? `${Math.round(r.credits * 10) / 10} credits` : ''].filter(Boolean).join(' · ')
+  const ended = r.status === 'passed' || r.status === 'failed'
+  const status = [fmt(elapsed(r, now)), r.kind, r.target, ended && r.credits !== undefined ? `${Math.round(r.credits * 10) / 10} credits` : ''].filter(Boolean).join(' · ')
   const failing = r.status === 'failed' ? currentStep(r) : undefined
   const kind = kindLine(r)
   return (
@@ -247,8 +247,8 @@ function runDetail(ui: Kit, press: Press, r: Run, now: number, width: number) {
           </ui.Box>
         )
       })}
-      {finished && r.sessionDir ? <ui.Text> </ui.Text> : null}
-      {finished && r.sessionDir ? <ui.Button key="evidence" label="Open evidence" variant="primary" onPress={() => press(`evidence:${r.id}`)} /> : null}
+      {ended && r.sessionDir ? <ui.Text> </ui.Text> : null}
+      {ended && r.sessionDir ? <ui.Button key="evidence" label="Open evidence" variant="primary" onPress={() => press(`evidence:${r.id}`)} /> : null}
     </ui.Box>
   )
 }
