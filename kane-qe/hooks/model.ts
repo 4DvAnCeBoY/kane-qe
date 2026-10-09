@@ -580,8 +580,11 @@ export function savedTestsFor(changed: readonly string[], saved: readonly { name
   if (!words.length) return []
   return saved
     .map(t => {
-      const hay = `${t.name} ${t.text}`.toLowerCase()
-      return { name: t.name, hits: words.filter(w => new RegExp(`\\b${w}`).test(hay)).length }
+      // A test named for the feature outranks one that only mentions it.
+      const name = t.name.toLowerCase().replace(/[_-]/g, ' ')
+      const body = t.text.toLowerCase()
+      const hits = words.reduce((n, w) => n + (new RegExp(`\\b${w}`).test(name) ? 2 : 0) + (new RegExp(`\\b${w}`).test(body) ? 1 : 0), 0)
+      return { name: t.name, hits }
     })
     .filter(t => t.hits > 0)
     .sort((a, b) => b.hits - a.hits)

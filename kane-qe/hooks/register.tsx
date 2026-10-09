@@ -359,8 +359,9 @@ function assureView(ui: Kit, press: Press, a: Assurance, now: number) {
 
 // ── reading kane-cli ─────────────────────────────────────────────────────
 
+/** Opened only by something the person did; brought forward over another pane in the dock (Claude Code's Diff). */
 function openPane($: EngineInterface) {
-  return $.ui.open({ id: PANE, title: 'Kane', columns: 58, rows: 28 })
+  return $.ui.open({ id: PANE, title: 'Kane', columns: 58, rows: 28, focus: true })
 }
 
 const modeOf = (m: '' | AfterChange): AfterChange => (m === '' ? setting : m)

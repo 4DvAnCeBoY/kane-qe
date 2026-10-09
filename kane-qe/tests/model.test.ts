@@ -243,6 +243,12 @@ describe('labels, edits and drafts', () => {
     ]
     expect(savedTestsFor(['/p/src/checkout/AddressForm.tsx'], saved)).toEqual(['checkout_guest_test.md'])
     expect(savedTestsFor(['/p/src/utils/index.ts'], saved)).toEqual([])
+    // Both mention search; the one named for it comes first.
+    const both = [
+      { name: 'cart_add_test.md', text: 'Search for iPod Nano and add it to the cart' },
+      { name: 'search_ipod_test.md', text: 'Search for iPod and assert 4 products are listed' },
+    ]
+    expect(savedTestsFor(['/p/src/search/searchQuery.ts'], both)).toEqual(['search_ipod_test.md', 'cart_add_test.md'])
   })
 
   test('the drafted objective is the reply, without labels or quotes', () => {
