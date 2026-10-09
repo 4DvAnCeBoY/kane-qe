@@ -1,7 +1,7 @@
 {
   "name": "kane-qe",
-  "version": "0.2.0",
-  "description": "KaneAI (kane-cli v16) cockpit for QE engineers in Claude Code: run browser tests in plain English, watch them live, see who owns a failure from the evidence, run suites on the cloud grid and devices, and turn requirements into proven coverage",
+  "version": "2.0.0",
+  "description": "Watches kane-cli (KaneAI) runs in Claude Code: a band above the prompt with the kane mascot, a pane for runs, steps, failures and assurance coverage, and a nudge to test what Claude just changed",
   "author": {
     "name": "Siraj K"
   },
@@ -19,29 +19,22 @@
   ],
   "types": "./types/index.d.ts",
   "userConfig": {
+    "afterChange": {
+      "type": "string",
+      "title": "After Claude changes code",
+      "description": "offer: show a Test this change button. auto: Claude tests the change before it finishes. off: do nothing.",
+      "options": [
+        "offer",
+        "auto",
+        "off"
+      ],
+      "default": "offer"
+    },
     "kaneCommand": {
       "type": "string",
       "title": "kane-cli command",
-      "description": "How to launch kane-cli, split on spaces (e.g. \"kane-cli\" or \"node /path/to/kane-cli/dist/index.js\")",
+      "description": "How to launch kane-cli for read-only checks (cover gaps), split on spaces",
       "default": "kane-cli"
-    },
-    "defaultTimeoutSeconds": {
-      "type": "number",
-      "title": "Default run timeout (s)",
-      "description": "Timeout passed to kane-cli runs started from the pane or by the model",
-      "default": 600
-    },
-    "mirrorExternalRuns": {
-      "type": "boolean",
-      "title": "Mirror other kane-cli runs",
-      "description": "Follow kane-cli runs started outside this mod (terminal, Bash, other agents) live in the pane",
-      "default": true
-    },
-    "openPaneOnStart": {
-      "type": "string",
-      "title": "Open the Kane QE pane at session start",
-      "description": "\"never\" (default): it opens on /kane or when a kane run starts; \"kane-projects\": also at start in folders with saved kane tests or a requirement store; \"always\"",
-      "default": "never"
     }
   }
 }
